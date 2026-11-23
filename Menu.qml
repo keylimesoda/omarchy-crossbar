@@ -50,15 +50,32 @@ Item {
     property int maxRowsHeight: -1
     function freezeCardTop() {}
 
-    // Pure per-pixel GPU silk wave & pinpoint sparkles (zero mesh aliasing).
+    Image {
+      id: xmbWaveAtlas
+      source: "shaders/wave_atlas.png"
+      visible: false
+      smooth: false
+      mipmap: false
+    }
+
+    Image {
+      id: xmbWaveNormals
+      source: "shaders/wave_normals.png"
+      visible: false
+      smooth: true
+      mipmap: false
+    }
+
+    // PS3 XMB deep sky backdrop + wave-hugging twinkling dust motes.
     ShaderEffect {
       id: xmbBackground
       anchors.fill: parent
       opacity: 0.98
-      property color tint: Qt.rgba(0.28, 0.56, 0.96, 1.0)
+      property color topColor: Qt.rgba(0.032, 0.115, 0.255, 1.0)
+      property color bottomColor: Qt.rgba(0.008, 0.025, 0.070, 1.0)
       property vector2d resolution: Qt.vector2d(width, height)
       property real time: 0
-      fragmentShader: "shaders/xmb_bg.frag.qsb"
+      fragmentShader: "shaders/ps3_bg.frag.qsb"
 
       NumberAnimation on time {
         from: 0
@@ -66,6 +83,38 @@ Item {
         duration: 1000000
         loops: Animation.Infinite
         running: panel.visible
+      }
+    }
+
+    // 4x MSAA firmware-exact PS3 SPU captured cloth (64 Catmull-Rom keyframes + FS_WAVECAP).
+    Item {
+      anchors.fill: parent
+      layer.enabled: true
+      layer.samples: 4
+      layer.smooth: true
+
+      ShaderEffect {
+        id: xmbCapturedWave
+        anchors.fill: parent
+        blending: true
+        mesh: GridMesh { resolution: Qt.size(127, 127) }
+        property var atlas: xmbWaveAtlas
+        property var normalMap: xmbWaveNormals
+        property color tint: Qt.rgba(0.84, 0.92, 1.0, 1.0)
+        property vector2d resolution: Qt.vector2d(width, height)
+        property real framePhase: 0
+        property real alpha: 0.20
+        property real scaleY: 0.85
+        vertexShader: "shaders/ps3_cap.vert.qsb"
+        fragmentShader: "shaders/ps3_cap.frag.qsb"
+
+        NumberAnimation on framePhase {
+          from: 0
+          to: 64
+          duration: 80000
+          loops: Animation.Infinite
+          running: panel.visible
+        }
       }
     }
 
