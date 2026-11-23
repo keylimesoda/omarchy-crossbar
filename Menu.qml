@@ -50,16 +50,15 @@ Item {
     property int maxRowsHeight: -1
     function freezeCardTop() {}
 
-    // GPU-accelerated PS3 XMB silk wave & dust shader adapted from OpenXMB.
+    // Pure per-pixel GPU silk wave & pinpoint sparkles (zero mesh aliasing).
     ShaderEffect {
       id: xmbBackground
       anchors.fill: parent
       opacity: 0.98
-      property color tint: Qt.rgba(0.15, 0.36, 0.76, 1.0)
+      property color tint: Qt.rgba(0.28, 0.56, 0.96, 1.0)
       property vector2d resolution: Qt.vector2d(width, height)
       property real time: 0
-      property real brightness: 0.92
-      fragmentShader: "shaders/original.frag.qsb"
+      fragmentShader: "shaders/xmb_bg.frag.qsb"
 
       NumberAnimation on time {
         from: 0
@@ -232,13 +231,97 @@ Item {
       Text {
         anchors.right: parent.right
         anchors.top: parent.top
-        text: root.filterText && root.mode !== "input" ? "Search: " + root.filterText : "OMARCHY  /  XMB"
+        visible: !!(root.filterText && root.mode !== "input")
+        text: "Search: " + root.filterText
         color: "white"
-        opacity: 0.72
+        opacity: 0.85
         font.family: card.xmbFontFamily
-        font.pixelSize: Math.max(14, Style.font.body, Math.round(12 * card.uiScale))
+        font.pixelSize: Math.max(14, Style.font.body, Math.round(14 * card.uiScale))
         font.weight: Font.Light
         font.letterSpacing: 1.5
+      }
+
+      // PS3 XMB top-right clock box with date/time and live analog dial.
+      Rectangle {
+        id: xmbClockBox
+        anchors.right: parent.right
+        anchors.top: parent.top
+        visible: !(root.filterText && root.mode !== "input")
+        width: Math.max(Math.round(280 * card.uiScale), clockRow.implicitWidth + Math.round(40 * card.uiScale))
+        height: Math.round(36 * card.uiScale)
+        color: Qt.rgba(0, 0, 0, 0.14)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.55)
+
+        property date now: new Date()
+        Timer {
+          interval: 15000
+          running: panel.visible
+          repeat: true
+          triggeredOnStart: true
+          onTriggered: xmbClockBox.now = new Date()
+        }
+
+        Row {
+          id: clockRow
+          anchors.right: parent.right
+          anchors.rightMargin: Math.round(14 * card.uiScale)
+          anchors.verticalCenter: parent.verticalCenter
+          spacing: Math.round(10 * card.uiScale)
+
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: Qt.formatDateTime(xmbClockBox.now, "d/M HH:mm")
+            color: "white"
+            font.family: card.xmbFontFamily
+            font.pixelSize: Math.round(15 * card.uiScale)
+            font.weight: Font.Light
+            style: Text.Raised
+            styleColor: Qt.rgba(0, 0, 0, 0.55)
+          }
+
+          Canvas {
+            id: analogDial
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.round(18 * card.uiScale)
+            height: width
+            antialiasing: true
+            property date timeValue: xmbClockBox.now
+            onTimeValueChanged: requestPaint()
+            onWidthChanged: requestPaint()
+
+            onPaint: {
+              var ctx = getContext("2d")
+              ctx.clearRect(0, 0, width, height)
+              var cx = width / 2
+              var cy = height / 2
+              var r = width * 0.42
+              var lw = Math.max(1.2, width * 0.085)
+
+              ctx.strokeStyle = "rgba(255, 255, 255, 0.92)"
+              ctx.lineWidth = lw
+              ctx.beginPath()
+              ctx.arc(cx, cy, r, 0, Math.PI * 2)
+              ctx.stroke()
+
+              var mins = timeValue.getMinutes()
+              var hrs = (timeValue.getHours() % 12) + mins / 60.0
+              var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
+              var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
+
+              ctx.lineCap = "round"
+              ctx.beginPath()
+              ctx.moveTo(cx, cy)
+              ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
+              ctx.stroke()
+
+              ctx.beginPath()
+              ctx.moveTo(cx, cy)
+              ctx.lineTo(cx + Math.cos(minAngle) * r * 0.78, cy + Math.sin(minAngle) * r * 0.78)
+              ctx.stroke()
+            }
+          }
+        }
       }
 
       Item {
