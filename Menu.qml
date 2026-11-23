@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
+import QtQuick.Effects
 import qs.Commons
 import qs.Ui
 import qs.services
@@ -49,77 +50,21 @@ Item {
     property int maxRowsHeight: -1
     function freezeCardTop() {}
 
-    Rectangle {
+    // GPU-accelerated PS3 XMB silk wave & dust shader adapted from OpenXMB.
+    ShaderEffect {
+      id: xmbBackground
       anchors.fill: parent
-      color: Qt.rgba(0.015, 0.035, 0.075, 0.70)
+      opacity: 0.98
+      property color tint: Qt.rgba(0.15, 0.36, 0.76, 1.0)
+      property vector2d resolution: Qt.vector2d(width, height)
+      property real time: 0
+      property real brightness: 0.92
+      fragmentShader: "shaders/original.frag.qsb"
 
-      gradient: Gradient {
-        GradientStop { position: 0.0; color: Qt.rgba(0.03, 0.12, 0.24, 0.72) }
-        GradientStop { position: 0.48; color: Qt.rgba(0.015, 0.045, 0.10, 0.66) }
-        GradientStop { position: 1.0; color: Qt.rgba(0.0, 0.01, 0.04, 0.78) }
-      }
-    }
-
-    // Slowly intersecting translucent ribbons, drawn only while the overlay is
-    // visible. This keeps the organic XMB motion without shipping Sony assets
-    // or continuously animating a hidden, keep-loaded plugin.
-    Canvas {
-      id: waveCanvas
-      anchors.fill: parent
-      antialiasing: true
-      property real phase: 0
-
-      function waveY(x, base, amplitude, cycles, offset, detail) {
-        var t = x / Math.max(1, width)
-        return height * (base
-          + amplitude * Math.sin(t * Math.PI * 2 * cycles + phase + offset)
-          + amplitude * detail * Math.sin(t * Math.PI * 2 * (cycles * 0.47) - phase * 0.62 + offset * 1.7))
-      }
-
-      function drawRibbon(ctx, base, amplitude, cycles, offset, thickness, red, green, blue, alpha) {
-        var step = Math.max(18, width / 110)
-        var x
-        ctx.beginPath()
-        ctx.moveTo(0, waveY(0, base, amplitude, cycles, offset, 0.42))
-        for (x = step; x < width; x += step)
-          ctx.lineTo(x, waveY(x, base, amplitude, cycles, offset, 0.42))
-        ctx.lineTo(width, waveY(width, base, amplitude, cycles, offset, 0.42))
-
-        for (x = width; x >= 0; x -= step) {
-          var breathing = 0.76 + 0.24 * Math.sin((x / Math.max(1, width)) * Math.PI * 3 - phase + offset)
-          ctx.lineTo(x, waveY(x, base, amplitude, cycles, offset, 0.42) + height * thickness * breathing)
-        }
-        ctx.closePath()
-
-        var gradient = ctx.createLinearGradient(0, height * (base - amplitude), 0,
-                                                height * (base + amplitude + thickness))
-        gradient.addColorStop(0, "rgba(" + red + "," + green + "," + blue + ",0)")
-        gradient.addColorStop(0.36, "rgba(" + red + "," + green + "," + blue + "," + alpha + ")")
-        gradient.addColorStop(1, "rgba(" + red + "," + green + "," + blue + ",0)")
-        ctx.fillStyle = gradient
-        ctx.fill()
-      }
-
-      onPaint: {
-        var ctx = getContext("2d")
-        ctx.clearRect(0, 0, width, height)
-        drawRibbon(ctx, 0.53, 0.055, 0.92, 0.2, 0.055, 72, 174, 255, 0.10)
-        drawRibbon(ctx, 0.58, 0.040, 1.13, 2.3, 0.024, 168, 220, 255, 0.13)
-        drawRibbon(ctx, 0.62, 0.072, 0.71, 4.5, 0.060, 35, 121, 232, 0.075)
-        drawRibbon(ctx, 0.66, 0.045, 1.26, 1.1, 0.018, 204, 235, 255, 0.12)
-        drawRibbon(ctx, 0.70, 0.060, 0.84, 3.4, 0.075, 49, 142, 238, 0.055)
-      }
-
-      onPhaseChanged: requestPaint()
-      onWidthChanged: requestPaint()
-      onHeightChanged: requestPaint()
-
-      NumberAnimation {
-        target: waveCanvas
-        property: "phase"
+      NumberAnimation on time {
         from: 0
-        to: Math.PI * 2
-        duration: 22000
+        to: 1000
+        duration: 1000000
         loops: Animation.Infinite
         running: panel.visible
       }
@@ -273,14 +218,26 @@ Item {
         }
       }
 
+      readonly property real uiScale: Math.max(1.0, panel.height / 1080)
+      readonly property string xmbFontFamily: "Noto Sans"
+      property real glowPulse: 0.45
+
+      SequentialAnimation on glowPulse {
+        loops: Animation.Infinite
+        running: panel.visible
+        NumberAnimation { from: 0.32; to: 0.68; duration: 1800; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 0.68; to: 0.32; duration: 1800; easing.type: Easing.InOutSine }
+      }
+
       Text {
         anchors.right: parent.right
         anchors.top: parent.top
         text: root.filterText && root.mode !== "input" ? "Search: " + root.filterText : "OMARCHY  /  XMB"
         color: "white"
         opacity: 0.72
-        font.family: root.fontFamily
-        font.pixelSize: Math.max(14, Style.font.body)
+        font.family: card.xmbFontFamily
+        font.pixelSize: Math.max(14, Style.font.body, Math.round(12 * card.uiScale))
+        font.weight: Font.Light
         font.letterSpacing: 1.5
       }
 
@@ -289,8 +246,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: Math.max(56, panel.height * 0.08)
-        height: Math.max(112, panel.height * 0.17)
+        anchors.topMargin: Math.max(120, panel.height * 0.24)
+        height: Math.max(104, panel.height * 0.11)
         clip: false
         visible: !root.dmenuActive
         readonly property real delegateWidth: Math.max(88, panel.width * 0.072)
@@ -324,7 +281,7 @@ Item {
               + (index - root.categoryIndex) * categoryList.categoryStep
               - width / 2
             z: selected ? 2 : 1
-            scale: selected ? 1.18 : 0.82
+            scale: selected ? 1.14 : 0.84
             opacity: selected ? 1.0 : (distance === 1 ? 0.56 : 0.38)
             visible: x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
@@ -334,25 +291,28 @@ Item {
             Behavior on opacity { NumberAnimation { duration: 120 } }
 
             Text {
+              id: categoryIcon
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: parent.top
               text: category.icon
-              color: "white"
-              font.family: category.iconFont.length ? category.iconFont : root.fontFamily
-              font.pixelSize: Math.max(38, panel.height * 0.058)
+              color: Qt.rgba(1, 1, 1, category.selected ? 0.86 : 0.72)
+              font.family: category.iconFont.length ? category.iconFont : card.xmbFontFamily
+              font.pixelSize: Math.max(40, panel.height * 0.052)
               style: Text.Raised
-              styleColor: Qt.rgba(0, 0, 0, 0.55)
+              styleColor: Qt.rgba(0, 0, 0, 0.45)
             }
 
             Text {
               anchors.horizontalCenter: parent.horizontalCenter
-              anchors.bottom: parent.bottom
-              anchors.bottomMargin: 8
+              anchors.top: categoryIcon.bottom
+              anchors.topMargin: Math.max(8, panel.height * 0.008)
               text: category.label
               color: "white"
-              font.family: root.fontFamily
-              font.pixelSize: Math.max(13, Style.font.body)
-              font.weight: category.selected ? Font.DemiBold : Font.Normal
+              font.family: card.xmbFontFamily
+              font.pixelSize: Math.max(15, Math.round(15 * card.uiScale))
+              font.weight: Font.Light
+              style: Text.Raised
+              styleColor: Qt.rgba(0, 0, 0, 0.55)
             }
 
             MouseArea {
@@ -372,12 +332,12 @@ Item {
       // vertical carousel as a submenu.
       Column {
         visible: root.dmenuActive
-        x: Math.max(0, card.categoryAnchorCenterX - 27)
+        x: Math.max(0, card.categoryAnchorCenterX - Math.round(27 * card.uiScale))
         width: Math.min(root.dmenuActive
           ? Math.max(420, Style.space(root.dmenuWidth), panel.width * 0.5)
           : Math.max(420, panel.width * 0.34), parent.width - x - (root.dmenuActive ? 32 : 0))
         anchors.verticalCenter: categoryList.verticalCenter
-        spacing: 10
+        spacing: Math.round(10 * card.uiScale)
 
         Text {
           width: parent.width
@@ -397,7 +357,7 @@ Item {
           text: root.filterText + "▏"
           color: "white"
           font.family: root.fontFamily
-          font.pixelSize: 23
+          font.pixelSize: Math.round(23 * card.uiScale)
           font.weight: Font.DemiBold
           elide: Text.ElideLeft
         }
@@ -409,14 +369,14 @@ Item {
             : "Enter  select      Esc  cancel      Type to filter"
           color: Qt.rgba(1, 1, 1, 0.5)
           font.family: root.fontFamily
-          font.pixelSize: 12
+          font.pixelSize: Math.round(12 * card.uiScale)
           font.letterSpacing: 1
         }
       }
 
       Column {
         anchors.left: parent.left
-        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - 27)
+        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(27 * card.uiScale))
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: Math.min(root.dmenuActive
@@ -466,7 +426,7 @@ Item {
               required property int childCount
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
-              readonly property real selectedY: categoryList.y + categoryList.height + 12
+              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(14 * card.uiScale)
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
               // the original label verbatim when the row is selected.
@@ -475,15 +435,15 @@ Item {
                 ? label.slice(0, descriptionSeparator).trim() : label
               readonly property string displayDetail: descriptionSeparator >= 0
                 ? label.slice(descriptionSeparator + 3).trim() + (detail ? " — " + detail : "") : detail
-              readonly property real selectedHeight: root.dmenuActive ? 128 : 72
-              readonly property real rowStep: root.dmenuActive ? 76 : 52
+              readonly property real selectedHeight: root.dmenuActive ? Math.round(128 * card.uiScale) : Math.round(72 * card.uiScale)
+              readonly property real rowStep: root.dmenuActive ? Math.round(76 * card.uiScale) : Math.round(52 * card.uiScale)
               width: xmbResultList.width
-              height: selected ? selectedHeight : (root.dmenuActive ? 68 : 48)
+              height: selected ? selectedHeight : (root.dmenuActive ? Math.round(68 * card.uiScale) : Math.round(48 * card.uiScale))
               y: index < root.selectedIndex
                 ? categoryList.y - (root.selectedIndex - index) * rowStep
                 : (index === root.selectedIndex
                   ? selectedY
-                  : selectedY + (root.dmenuActive ? 128 : 72) + (index - root.selectedIndex - 1) * rowStep)
+                  : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
               opacity: selected ? 1.0 : 0.48
               Behavior on y { NumberAnimation { duration: 145; easing.type: Easing.OutCubic } }
@@ -492,7 +452,7 @@ Item {
               Image {
                 id: xmbAppImage
                 visible: xmbRow.kind === "app"
-                width: xmbRow.selected ? 48 : 30
+                width: xmbRow.selected ? Math.round(44 * card.uiScale) : Math.round(28 * card.uiScale)
                 height: width
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
@@ -503,37 +463,81 @@ Item {
                 asynchronous: true
               }
 
+              MultiEffect {
+                source: xmbRowIcon
+                anchors.fill: xmbRowIcon
+                visible: xmbRow.selected && xmbRow.kind !== "app"
+                blurEnabled: true
+                blur: 0.85
+                blurMax: Math.round(20 * card.uiScale)
+                opacity: 0.45 + 0.25 * card.glowPulse
+              }
+
               Text {
                 id: xmbRowIcon
                 visible: xmbRow.kind !== "app"
-                width: xmbRow.selected ? 54 : 38
+                width: xmbRow.selected ? Math.round(54 * card.uiScale) : Math.round(38 * card.uiScale)
                 height: parent.height
                 anchors.left: parent.left
                 text: xmbRow.icon || "•"
-                color: "white"
+                color: Qt.rgba(1, 1, 1, xmbRow.selected ? 0.88 : 0.76)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                font.family: xmbRow.iconFont.length ? xmbRow.iconFont : root.fontFamily
-                font.pixelSize: xmbRow.selected ? 42 : 24
+                font.family: xmbRow.iconFont.length ? xmbRow.iconFont : card.xmbFontFamily
+                font.pixelSize: xmbRow.selected ? Math.round(36 * card.uiScale) : Math.round(22 * card.uiScale)
+                style: Text.Raised
+                styleColor: Qt.rgba(0, 0, 0, 0.45)
                 Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
               }
 
               Column {
                 anchors.left: parent.left
-                anchors.leftMargin: xmbRow.selected ? 68 : 48
+                anchors.leftMargin: xmbRow.selected ? Math.round(70 * card.uiScale) : Math.round(50 * card.uiScale)
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 1
 
-                Text {
+                Item {
                   width: parent.width
-                  text: xmbRow.displayLabel
-                  color: "white"
-                  font.family: root.fontFamily
-                  font.pixelSize: xmbRow.selected ? 23 : 17
-                  font.weight: xmbRow.selected ? Font.DemiBold : Font.Normal
-                  elide: Text.ElideRight
-                  Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
+                  height: xmbRowLabel.implicitHeight
+
+                  // Outer wide bloom
+                  MultiEffect {
+                    source: xmbRowLabel
+                    anchors.fill: xmbRowLabel
+                    visible: xmbRow.selected
+                    blurEnabled: true
+                    blur: 1.0
+                    blurMax: Math.round(34 * card.uiScale)
+                    brightness: 0.35
+                    opacity: 0.72 + 0.28 * card.glowPulse
+                  }
+
+                  // Tight bright inner bloom (gives the crisp PS3 luminous text halo)
+                  MultiEffect {
+                    source: xmbRowLabel
+                    anchors.fill: xmbRowLabel
+                    visible: xmbRow.selected
+                    blurEnabled: true
+                    blur: 0.85
+                    blurMax: Math.round(12 * card.uiScale)
+                    brightness: 0.45
+                    opacity: 0.90 + 0.10 * card.glowPulse
+                  }
+
+                  Text {
+                    id: xmbRowLabel
+                    width: parent.width
+                    text: xmbRow.displayLabel
+                    color: "white"
+                    font.family: card.xmbFontFamily
+                    font.pixelSize: xmbRow.selected ? Math.round(18 * card.uiScale) : Math.round(14 * card.uiScale)
+                    font.weight: Font.Light
+                    style: Text.Raised
+                    styleColor: Qt.rgba(0, 0, 0, 0.55)
+                    elide: Text.ElideRight
+                    Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
+                  }
                 }
 
                 Text {
@@ -541,8 +545,9 @@ Item {
                   visible: (root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0
                   text: xmbRow.displayDetail
                   color: Qt.rgba(1, 1, 1, 0.55)
-                  font.family: root.fontFamily
-                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? 18 : 15) : 12
+                  font.family: card.xmbFontFamily
+                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(16 * card.uiScale) : Math.round(13 * card.uiScale)) : Math.round(12 * card.uiScale)
+                  font.weight: Font.Light
                   wrapMode: root.dmenuActive && xmbRow.selected ? Text.WordWrap : Text.NoWrap
                   maximumLineCount: root.dmenuActive && xmbRow.selected ? 3 : 1
                   elide: Text.ElideRight
@@ -558,14 +563,14 @@ Item {
           }
 
           Text {
-            x: 48
-            y: categoryList.y + categoryList.height + 12
+            x: Math.round(48 * card.uiScale)
+            y: categoryList.y + categoryList.height + Math.round(16 * card.uiScale)
             visible: root.dmenuActive && root.mode !== "input" && displayModel.count === 0
             text: root.filterText ? "No matches" : "Nothing here yet"
             color: "white"
             opacity: 0.62
             font.family: root.fontFamily
-            font.pixelSize: 20
+            font.pixelSize: Math.round(20 * card.uiScale)
           }
         }
       }
