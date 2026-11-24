@@ -449,14 +449,17 @@ Item {
         : root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
-      readonly property var submenuSnapshot: (inSubmenu && root.submenuSnapshotStack.length > 0)
+      readonly property var submenuSnapshot: (root.submenuSnapshotStack.length > 0)
         ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
         : null
-      // Authentic 3-column PS3 Level-2 drilldown axes (1080p-referenced):
-      // [far-left: shifted category + parent icon]  [middle: collapsed siblings + ◀]  [right: active L2 list]
-      readonly property real submenuParentX: Math.max(Math.round(72 * hdScale), categoryAnchorCenterX - Math.round(220 * hdScale))
-      readonly property real submenuArrowX: submenuParentX + Math.round(126 * hdScale)
-      readonly property real submenuFocalY: Math.round(410 * hdScale)
+      // Single continuous firmware-verified submenu collapse factor (explore_plugin: 250 ms):
+      // 0 = full Level-1 XMB, 1 = settled Level-2 (cat shifts -257px/-10px, parent -> 316,
+      // siblings -> 455 around focal Y with ◀ chevron, children slide in from +250px right).
+      property real subT: inSubmenu ? 1.0 : 0.0
+      Behavior on subT { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+      readonly property real submenuParentX: categoryAnchorCenterX - Math.round(252 * hdScale)
+      readonly property real submenuSibX: categoryAnchorCenterX - Math.round(113 * hdScale)
+      readonly property real submenuFocalY: categoryList.baseTopMargin + categoryList.height + Math.round(72 * hdScale)
       // Sony PAF PhText pulsing glow (vsh.elf 0x38cf50): sinusoidal 1.8s breathe (0.35 <-> 0.95).
       property real phTextGlowAlpha: 0.35
       SequentialAnimation on phTextGlowAlpha {
@@ -623,11 +626,11 @@ Item {
 
       Item {
         id: categoryList
+        readonly property real baseTopMargin: Math.round(238 * card.hdScale)
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: card.inSubmenu ? Math.round(146 * card.hdScale) : Math.round(238 * card.hdScale)
-        Behavior on anchors.topMargin { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
+        anchors.topMargin: baseTopMargin - Math.round(10 * card.hdScale * card.subT)
         height: Math.round(134 * card.hdScale)
         clip: false
         visible: !root.dmenuActive
@@ -638,6 +641,7 @@ Item {
           width * 0.22,
           Math.round(568 * card.hdScale) - card.anchors.leftMargin
         )
+        readonly property real catSubShiftX: -Math.round(257 * card.hdScale) * card.subT
 
         Repeater {
           model: categoryModel
@@ -656,19 +660,18 @@ Item {
             readonly property bool selected: distance === 0
             width: categoryList.delegateWidth
             height: categoryList.height
-            x: (card.inSubmenu && selected)
-              ? (card.submenuParentX - width / 2)
-              : (categoryList.selectedCenterX + (index - root.categoryIndex) * categoryList.categoryStep - width / 2)
+            // Horizontal rail step animates smoothly; submenu shift rides directly on subT.
+            property real railX: categoryList.selectedCenterX + (index - root.categoryIndex) * categoryList.categoryStep - width / 2
+            Behavior on railX { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+            x: railX + categoryList.catSubShiftX
             z: selected ? 2 : 1
-            scale: selected ? (card.inSubmenu ? 1.08 : 1.45) : 1.0
-            opacity: card.inSubmenu ? (selected ? 0.48 : 0.0) : (selected ? 1.0 : 0.55)
-            visible: (!card.inSubmenu || selected)
+            property real focusScale: selected ? 1.45 : 1.0
+            Behavior on focusScale { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
+            scale: focusScale * (1.0 + (0.833 - 1.0) * card.subT)
+            opacity: (selected ? 1.0 : 0.55) * (selected ? (1.0 - 0.40 * card.subT) : (1.0 - card.subT))
+            visible: opacity > 0.01
               && x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
-
-            Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
-            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
             Text {
               id: categoryIcon
@@ -693,15 +696,12 @@ Item {
           }
         }
 
-        // Active category label anchored to a zero-width pivot on the focal column so changing
-        // text width never triggers horizontal slide; only slides left/up with the icon in Level 2.
+        // Active category label rides directly with catSubShiftX (zero sideways drift when switching categories).
         Item {
-          x: card.inSubmenu ? card.submenuParentX : categoryList.selectedCenterX
-          y: card.inSubmenu ? Math.round(78 * card.hdScale) : Math.round(92 * card.hdScale)
+          x: categoryList.selectedCenterX + categoryList.catSubShiftX
+          y: Math.round(92 * card.hdScale) - Math.round(8 * card.hdScale * card.subT)
           width: 0
           height: 0
-          Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
-          Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
 
           Text {
             id: activeCategoryLabel
@@ -711,13 +711,11 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: curCat ? curCat.label : ""
             color: "white"
-            opacity: card.inSubmenu ? 0.48 : 1.0
+            opacity: 0.90 * (1.0 - 0.55 * card.subT)
             font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(card.inSubmenu ? 18 * card.hdScale : 23 * card.hdScale)
+            font.pixelSize: Math.round(23 * card.hdScale * (1.0 - 0.14 * card.subT))
             style: Text.Raised
             styleColor: Qt.rgba(0, 0, 0, 0.25)
-            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-            Behavior on font.pixelSize { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
           }
         }
       }
@@ -769,121 +767,94 @@ Item {
         }
       }
 
-      // Authentic PS3 Level-2 drilldown left & middle columns (slide left from main axis into place):
-      // - Far-left (submenuParentX): entered parent item icon directly under the shifted category.
-      // - Middle (submenuArrowX): crisp white ◀ back arrow at focal Y, with dimmed icon-only
-      //   Level-1 siblings collapsed tightly above and below ◀.
+      // Firmware-verified PS3 Level-2 parent collapse layer (driven continuously by card.subT):
+      // - Selected parent item slides left from categoryAnchorCenterX -> submenuParentX (316), bright 0.92.
+      // - Level-1 siblings slide left from categoryAnchorCenterX -> submenuSibX (455) at 80px pitch, fading with distance.
+      // - Left-pointing ◀ chevron fades in at submenuSibX in the vacated parent slot.
       Item {
         id: submenuBreadcrumbLayer
         anchors.fill: parent
-        visible: opacity > 0.01
-        opacity: card.inSubmenu ? 1.0 : 0.0
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        visible: card.subT > 0.01 && card.submenuSnapshot !== null
         readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
 
-        // Far-left: entered parent item icon (slides left from focal axis to submenuParentX)
-        Item {
-          x: (card.inSubmenu ? card.submenuParentX : card.categoryAnchorCenterX) - width / 2
-          y: submenuBreadcrumbLayer.focalCenterY - height / 2
-          width: Math.round(72 * card.hdScale)
-          height: Math.round(72 * card.hdScale)
-          Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
+        Repeater {
+          model: card.submenuSnapshot ? card.submenuSnapshot.rows : []
 
-          Text {
-            anchors.centerIn: parent
-            text: (card.submenuParentItem && card.submenuParentItem.icon) || "•"
-            color: Qt.rgba(1, 1, 1, 0.72)
-            font.family: (card.submenuParentItem && card.submenuParentItem.iconFont) || card.xmbFontFamily
-            font.pixelSize: Math.round(54 * card.hdScale)
-            style: Text.Raised
-            styleColor: Qt.rgba(0, 0, 0, 0.45)
-          }
+          delegate: Item {
+            required property var modelData
+            required property int index
+            readonly property int selIdx: card.submenuSnapshot ? card.submenuSnapshot.selectedIndex : 0
+            readonly property int delta: index - selIdx
+            readonly property int dist: Math.abs(delta)
+            readonly property bool isParentSel: delta === 0
+            readonly property real dstX: isParentSel ? card.submenuParentX : card.submenuSibX
+            readonly property real curX: card.categoryAnchorCenterX + (dstX - card.categoryAnchorCenterX) * card.subT
+            readonly property real curY: submenuBreadcrumbLayer.focalCenterY + delta * Math.round(80 * card.hdScale)
+            visible: dist <= 5
+            width: Math.round(78 * card.hdScale)
+            height: Math.round(78 * card.hdScale)
+            x: curX - width / 2
+            y: curY - height / 2
+            opacity: (isParentSel ? 0.92 : Math.max(0.12, 0.42 - (dist - 1) * 0.05)) * card.subT
 
-          MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.goBack()
-          }
-        }
-
-        // Middle column container: slides left from focal axis to submenuArrowX
-        Item {
-          id: submenuMiddleCol
-          x: card.inSubmenu ? card.submenuArrowX : card.categoryAnchorCenterX
-          y: 0
-          width: 0
-          height: parent.height
-          Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
-
-          // Collapsed icon-only Level-1 siblings stacked tightly above/below ◀
-          Repeater {
-            model: card.submenuSnapshot ? card.submenuSnapshot.rows : []
-
-            delegate: Item {
-              required property var modelData
-              required property int index
-              readonly property int selIdx: card.submenuSnapshot ? card.submenuSnapshot.selectedIndex : 0
-              readonly property int delta: index - selIdx
-              readonly property int dist: Math.abs(delta)
-              visible: delta !== 0 && dist <= 4
-              width: Math.round(64 * card.hdScale)
-              height: Math.round(64 * card.hdScale)
-              x: -width / 2
-              y: submenuBreadcrumbLayer.focalCenterY + delta * Math.round(72 * card.hdScale) - height / 2
-              opacity: Math.max(0.0, 0.42 - (dist - 1) * 0.09)
-
-              Image {
-                visible: modelData.kind === "app"
-                anchors.centerIn: parent
-                width: Math.round(44 * card.hdScale)
-                height: width
-                fillMode: Image.PreserveAspectFit
-                sourceSize.width: width * Screen.devicePixelRatio
-                sourceSize.height: height * Screen.devicePixelRatio
-                source: visible && root.appLibrary ? root.appLibrary.iconSource(modelData.appIcon) : ""
-                asynchronous: true
-              }
-
-              Text {
-                visible: modelData.kind !== "app"
-                anchors.centerIn: parent
-                text: modelData.icon || "•"
-                color: "white"
-                font.family: (modelData.iconFont && modelData.iconFont.length) ? modelData.iconFont : card.xmbFontFamily
-                font.pixelSize: Math.round(46 * card.hdScale)
-                style: Text.Raised
-                styleColor: Qt.rgba(0, 0, 0, 0.40)
-              }
+            Image {
+              visible: modelData.kind === "app"
+              anchors.centerIn: parent
+              width: Math.round((isParentSel ? 64 : 50) * card.hdScale)
+              height: width
+              fillMode: Image.PreserveAspectFit
+              sourceSize.width: width * Screen.devicePixelRatio
+              sourceSize.height: height * Screen.devicePixelRatio
+              source: visible && root.appLibrary ? root.appLibrary.iconSource(modelData.appIcon) : ""
+              asynchronous: true
             }
-          }
 
-          // Middle focal slot: crisp white left-pointing ◀ back indicator
-          Text {
-            x: -width / 2
-            y: submenuBreadcrumbLayer.focalCenterY - height / 2
-            text: "◀"
-            color: Qt.rgba(1, 1, 1, 0.94)
-            font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(28 * card.hdScale)
-            style: Text.Raised
-            styleColor: Qt.rgba(0, 0, 0, 0.45)
+            Text {
+              visible: modelData.kind !== "app"
+              anchors.centerIn: parent
+              text: modelData.icon || "•"
+              color: "white"
+              font.family: (modelData.iconFont && modelData.iconFont.length) ? modelData.iconFont : card.xmbFontFamily
+              font.pixelSize: Math.round((isParentSel ? 62 : 48) * card.hdScale)
+              style: Text.Raised
+              styleColor: Qt.rgba(0, 0, 0, 0.40)
+            }
 
             MouseArea {
+              enabled: isParentSel
               anchors.fill: parent
-              anchors.margins: -Math.round(14 * card.hdScale)
               cursorShape: Qt.PointingHandCursor
               onClicked: root.goBack()
             }
           }
         }
+
+        // Back-chevron breadcrumb: crisp left-pointing ◀ in the vacated parent slot at submenuSibX
+        Text {
+          x: card.submenuSibX - width / 2
+          y: submenuBreadcrumbLayer.focalCenterY - height / 2
+          text: "◀"
+          color: Qt.rgba(0.84, 0.84, 0.86, 0.95)
+          opacity: card.subT
+          font.family: card.xmbFontFamily
+          font.pixelSize: Math.round(28 * card.hdScale)
+          style: Text.Raised
+          styleColor: Qt.rgba(0, 0, 0, 0.45)
+
+          MouseArea {
+            anchors.fill: parent
+            anchors.margins: -Math.round(14 * card.hdScale)
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.goBack()
+          }
+        }
       }
 
       Column {
+        id: xmbListColumn
         anchors.left: parent.left
-        anchors.leftMargin: card.inSubmenu
-          ? Math.max(0, card.submenuArrowX + Math.round(54 * card.hdScale))
-          : Math.max(0, card.categoryAnchorCenterX - Math.round(72 * card.hdScale))
-        Behavior on anchors.leftMargin { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
+        // Level-2 children settle at the exact main column axis (568), sliding in from +250 px right!
+        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(72 * card.hdScale))
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: Math.min(root.dmenuActive
@@ -892,27 +863,11 @@ Item {
         spacing: 0
         visible: root.activeMenu !== "root" || root.filterText || root.dmenuActive
 
-        // Slide the active vertical column in from the right on drilldown (or from the left on back).
-        property real slideOffsetX: 0
-        transform: Translate { x: xmbListColumn.slideOffsetX }
-        id: xmbListColumn
-
-        ParallelAnimation {
-          id: xmbColumnSlideAnim
-          NumberAnimation { id: xmbColumnSlideX; target: xmbListColumn; property: "slideOffsetX"; to: 0; duration: 220; easing.type: Easing.OutQuart }
-          NumberAnimation { target: xmbListColumn; property: "opacity"; from: 0.0; to: 1.0; duration: 200; easing.type: Easing.OutCubic }
+        // Child column slides in from +250 px right as subT goes 0 -> 1 (and back on exit).
+        transform: Translate {
+          x: card.inSubmenu ? Math.round(250 * card.hdScale * (1.0 - card.subT)) : 0
         }
-
-        Connections {
-          target: card
-          function onInSubmenuChanged() {
-            xmbColumnSlideAnim.stop()
-            xmbColumnSlideX.from = card.inSubmenu ? Math.round(120 * card.hdScale) : Math.round(-80 * card.hdScale)
-            xmbListColumn.slideOffsetX = xmbColumnSlideX.from
-            xmbListColumn.opacity = 0.0
-            xmbColumnSlideAnim.restart()
-          }
-        }
+        opacity: card.inSubmenu ? card.subT : 1.0
 
         Text {
           width: 0
