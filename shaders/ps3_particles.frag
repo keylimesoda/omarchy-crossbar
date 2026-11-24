@@ -76,8 +76,8 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float bandY, float scale, float la
     float bandMask = exp(-(dy * dy) / (asymSigma * asymSigma));
     if (bandMask < 0.02) return vec3(0.0);
 
-    float depthFactor = clamp(FOCUS_Z / layerDepth, 0.70, 1.40);
-    vec2 drift = vec2(-0.010, -0.003) * pc.time + vec2(pc.parallaxX * 0.14, -pc.parallaxY * 0.08) * depthFactor;
+    float depthFactor = clamp(FOCUS_Z / layerDepth, 0.70, 1.45);
+    vec2 drift = vec2(-0.045, -0.015) * depthFactor * pc.time + vec2(pc.parallaxX * 0.14, -pc.parallaxY * 0.08) * depthFactor;
     vec2 p = aspectUV * scale + drift + vec2(seedOff * 19.3, seedOff * 11.7);
     vec2 cell = floor(p);
     vec2 f = fract(p) - 0.5;
@@ -102,15 +102,16 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float bandY, float scale, float la
     float h0 = hash12(cycleSeed + vec2(17.3, 5.1));
     float h1 = hash12(cycleSeed + vec2(3.7, 29.4));
 
-    // Gentle Brownian-like hover inside the cell
-    vec2 pos = (vec2(h0, h1) - 0.5) * 0.68
-             + vec2(sin(pc.time * (0.25 + h0 * 0.35) + spawnId * 25.0),
-                    cos(pc.time * (0.22 + h1 * 0.30) + spawnId * 19.0)) * 0.10;
+    // Livelier Brownian-like wander inside the cell
+    vec2 pos = (vec2(h0, h1) - 0.5) * 0.58
+             + vec2(sin(pc.time * (0.55 + h0 * 0.65) + spawnId * 25.0),
+                    cos(pc.time * (0.48 + h1 * 0.60) + spawnId * 19.0)) * 0.18;
 
-    // Physical Depth of Field: defocus enlarges radius AND dims intensity (energy conservation)
-    float defocus = abs(layerDepth - FOCUS_Z) / 2.2;
-    float radiusPx = (1.15 + defocus * 3.6) * pxScale * (0.75 + 0.50 * h1);
-    float dofDim = 1.0 / (1.0 + defocus * defocus * 2.6);
+    // Physical Depth of Field + wider natural size distribution (1px micro-dust to soft bokeh)
+    float defocus = abs(layerDepth - FOCUS_Z) / 2.0;
+    float sizeVar = 0.75 + pow(h1, 2.2) * 2.6;
+    float radiusPx = (1.15 * sizeVar + defocus * 5.2) * pxScale;
+    float dofDim = 1.0 / (1.0 + defocus * defocus * 2.2);
 
     float cellPx = pc.resolution.y / scale;
     float d = length(f - pos) / max(radiusPx / max(cellPx, 1.0), 0.002);
@@ -170,18 +171,18 @@ void main() {
         float ageF = (age < 0.12) ? (age / 0.12) : ((age > 0.75) ? ((1.0 - age) / 0.25) : 1.0);
         if (ageF < 0.01) continue;
 
-        float wanderX = sin(t * (0.12 + h0 * 0.14) + fi * 2.3) * 0.40 + (age - 0.5) * 0.28;
-        float wanderY = sin(t * (0.15 + h1 * 0.16) + fi * 1.7) * 0.16 - (age - 0.5) * 0.10;
+        float wanderX = sin(t * (0.24 + h0 * 0.28) + fi * 2.3) * 0.85 + (age - 0.5) * 0.90;
+        float wanderY = sin(t * (0.28 + h1 * 0.30) + fi * 1.7) * 0.34 - (age - 0.5) * 0.25;
         float px = mod(eye.x + wanderX - pc.parallaxX * depthFactor + 7.73, 13.24) - 7.73;
         float py = eye.y * 0.68 + 0.18 + (px * 0.04) + wanderY + pc.parallaxY * depthFactor * 0.45;
 
         vec2 ndc = vec2(px / (depth * 0.58 * aspect), py / (depth * 0.58));
         vec2 centerPx = vec2((ndc.x * 0.5 + 0.5) * res.x, (0.5 - ndc.y * 0.5) * res.y);
 
-        // Energy-conserving Depth of Field from FOCUS_Z = 5.8
-        float defocus = abs(depth - FOCUS_Z) / 1.65;
-        float radiusPx = max(1.6, (1.6 + defocus * 5.2) * pxScale);
-        float dofDim = 1.0 / (1.0 + defocus * defocus * 2.4);
+        // Energy-conserving Depth of Field from FOCUS_Z = 5.8 (wider size range)
+        float defocus = abs(depth - FOCUS_Z) / 1.55;
+        float radiusPx = max(1.6, (1.6 + pow(h1, 2.0) * 2.4 + defocus * 7.2) * pxScale);
+        float dofDim = 1.0 / (1.0 + defocus * defocus * 2.0);
 
         vec2 coord = (fragPx - centerPx) / radiusPx;
         float d2 = dot(coord, coord);
