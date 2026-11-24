@@ -31,6 +31,16 @@ Item {
     running: root.useNativeBackend && panel.visible
     command: [root.nativeBackendBin, "--layer-shell", "--opacity", String(root.nativeBackendOpacity), root.nativeBackendQrc]
   }
+
+  // Authentic PS3 SCE-PS3 Rodin UI fonts (local OFW 4.76 extraction; falls back to root.fontFamily).
+  FontLoader {
+    id: ps3FontRegular
+    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-R-LATIN.TTF"
+  }
+  FontLoader {
+    id: ps3FontLight
+    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-L-LATIN.TTF"
+  }
   property real waveTargetY: 0
   property real waveVelX: 0
   property real waveVelY: 0
@@ -387,8 +397,11 @@ Item {
         }
       }
 
+      readonly property real hdScale: panel.height / 1080.0
       readonly property real uiScale: Math.max(1.0, panel.height / 1080) * 1.38
-      readonly property string xmbFontFamily: root.fontFamily
+      readonly property string xmbFontFamily: ps3FontRegular.status === FontLoader.Ready
+        ? ps3FontRegular.name
+        : root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
       // Sony PAF PhText pulsing glow (vsh.elf 0x38cf50): sinusoidal 1.8s breathe (0.35 <-> 0.95).
@@ -413,42 +426,30 @@ Item {
         font.letterSpacing: 1.5
       }
 
-      // PS3 XMB top-right glass clock bar (sleek 9:1 edge-bleeding frame,
-      // uniform frosted-glass border glow, single-pass shadowed 12h text + analog dial).
+      // Authentic PS3 XMB top-right clock indicator (xmb_plugin_normal.rco -> page_xmb_indicator):
+      // 560x82 px @ 1080p, flush right, 74 px from top, 26 px right inset, tex_indi_bg 9-slice,
+      // single right-aligned "M/d h:mm AP" string beside Sony's tex_busy analog clock sprites.
       Item {
         id: xmbClockBox
         anchors.right: parent.right
-        anchors.rightMargin: -card.anchors.rightMargin - Math.round(6 * card.uiScale)
+        anchors.rightMargin: -card.anchors.rightMargin
         anchors.top: parent.top
-        anchors.topMargin: -Math.round(panel.height * 0.05)
+        anchors.topMargin: Math.round(74 * card.hdScale) - card.anchors.topMargin
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.max(Math.round(panel.width * 0.30), Math.max(dateText.implicitWidth, timeRow.implicitWidth) * 2 + Math.round(48 * card.uiScale))
-        height: Math.round(36 * card.uiScale)
+        width: Math.round(560 * card.hdScale)
+        height: Math.round(82 * card.hdScale)
 
-        // Ephemeral frosted-glass interior tint
-        Rectangle {
-          anchors.fill: parent
-          radius: Math.round(4 * card.uiScale)
-          color: Qt.rgba(1, 1, 1, 0.025)
-        }
-
-        // Whisper-soft frosted-glass halo around the hairline border
-        MultiEffect {
-          source: clockFrame
-          anchors.fill: clockFrame
-          blurEnabled: true
-          blur: 0.70
-          blurMax: Math.round(9 * card.uiScale)
-          opacity: 0.32
-        }
-
-        Rectangle {
-          id: clockFrame
-          anchors.fill: parent
-          radius: Math.round(4 * card.uiScale)
-          color: "transparent"
-          border.width: Math.max(1, Math.round(0.55 * card.uiScale))
-          border.color: Qt.rgba(1, 1, 1, 0.42)
+        // Sony 24x24 9-slice tex_indi_bg (8 px top/bottom/left, open on right), scaled from 1080p ref.
+        BorderImage {
+          width: 560
+          height: 82
+          transformOrigin: Item.TopLeft
+          scale: card.hdScale
+          source: "file:///home/ric/Modern-XMB/assets/ui/tex_indi_bg.png"
+          border { left: 8; top: 8; right: 0; bottom: 8 }
+          horizontalTileMode: BorderImage.Stretch
+          verticalTileMode: BorderImage.Stretch
+          smooth: true
         }
 
         property date now: new Date()
@@ -460,98 +461,65 @@ Item {
           onTriggered: xmbClockBox.now = new Date()
         }
 
-        // Date is right-aligned to the bar's center split; time + dial are left-aligned to it.
-        Item {
-          id: clockSource
-          anchors.fill: parent
-          visible: false
+        // Right-aligned date/time string + Sony analog clock icon (indi_adjust.x = -26 @ 1080p).
+        Row {
+          anchors.right: parent.right
+          anchors.rightMargin: Math.round(26 * card.hdScale)
+          anchors.verticalCenter: parent.verticalCenter
+          spacing: Math.round(14 * card.hdScale)
 
           Text {
-            id: dateText
-            anchors.right: parent.horizontalCenter
-            anchors.rightMargin: Math.round(5 * card.uiScale)
             anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: Math.round(1 * card.uiScale)
-            text: Qt.formatDateTime(xmbClockBox.now, "M/d")
+            text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
             color: "white"
             font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(17 * card.uiScale)
+            font.pixelSize: Math.round(25 * card.hdScale)
             font.weight: Font.Normal
+            style: Text.Raised
+            styleColor: Qt.rgba(0, 0, 0, 0.55)
           }
 
-          Row {
-            id: timeRow
-            anchors.left: parent.horizontalCenter
-            anchors.leftMargin: Math.round(5 * card.uiScale)
+          Item {
+            id: busyClockIcon
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Math.round(10 * card.uiScale)
+            width: Math.round(36 * card.hdScale)
+            height: Math.round(36 * card.hdScale)
 
-            Text {
-              anchors.verticalCenter: parent.verticalCenter
-              anchors.verticalCenterOffset: Math.round(1 * card.uiScale)
-              text: Qt.formatDateTime(xmbClockBox.now, "h:mm AP")
-              color: "white"
-              font.family: card.xmbFontFamily
-              font.pixelSize: Math.round(17 * card.uiScale)
-              font.weight: Font.Normal
+            readonly property real mins: xmbClockBox.now.getMinutes()
+            readonly property real hrs: (xmbClockBox.now.getHours() % 12) + mins / 60.0
+
+            Image {
+              anchors.centerIn: parent
+              width: Math.round(46 * card.hdScale)
+              height: Math.round(46 * card.hdScale)
+              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy_shadow.png"
+              smooth: true
             }
 
-            Canvas {
-              id: analogDial
-              anchors.verticalCenter: parent.verticalCenter
-              width: Math.round(21.5 * card.uiScale)
-              height: width
-              antialiasing: true
-              property date timeValue: xmbClockBox.now
-              onTimeValueChanged: requestPaint()
-              onWidthChanged: requestPaint()
+            Image {
+              anchors.fill: parent
+              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy.png"
+              smooth: true
+            }
 
-              onPaint: {
-                var ctx = getContext("2d")
-                ctx.clearRect(0, 0, width, height)
-                var cx = width / 2
-                var cy = height / 2
-                var r = width * 0.41
-                var ringW = Math.max(1.6, width * 0.115)
-                var handW = Math.max(1.5, width * 0.105)
+            Image {
+              anchors.centerIn: parent
+              width: Math.round(8 * card.hdScale)
+              height: Math.round(36 * card.hdScale)
+              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy_s.png"
+              rotation: busyClockIcon.hrs * 30.0
+              smooth: true
+            }
 
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.98)"
-                ctx.lineWidth = ringW
-                ctx.beginPath()
-                ctx.arc(cx, cy, r, 0, Math.PI * 2)
-                ctx.stroke()
-
-                var mins = timeValue.getMinutes()
-                var hrs = (timeValue.getHours() % 12) + mins / 60.0
-                var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
-                var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
-
-                ctx.lineWidth = handW
-                ctx.lineCap = "round"
-                ctx.beginPath()
-                ctx.moveTo(cx, cy)
-                ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
-                ctx.stroke()
-
-                ctx.beginPath()
-                ctx.moveTo(cx, cy)
-                ctx.lineTo(cx + Math.cos(minAngle) * r * 0.76, cy + Math.sin(minAngle) * r * 0.76)
-                ctx.stroke()
-              }
+            Image {
+              anchors.centerIn: parent
+              width: Math.round(8 * card.hdScale)
+              height: Math.round(36 * card.hdScale)
+              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy_l.png"
+              rotation: busyClockIcon.mins * 6.0
+              smooth: true
             }
           }
-        }
-
-        // Single crisp pass with autoPaddingEnabled: false so shadow never shifts alignment
-        MultiEffect {
-          source: clockSource
-          anchors.fill: clockSource
-          autoPaddingEnabled: false
-          shadowEnabled: true
-          shadowColor: Qt.rgba(0, 0, 0, 0.65)
-          shadowBlur: 0.30
-          shadowHorizontalOffset: Math.round(1.5 * card.uiScale)
-          shadowVerticalOffset: Math.round(1.5 * card.uiScale)
         }
       }
 
