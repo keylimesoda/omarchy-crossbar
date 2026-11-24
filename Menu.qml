@@ -449,9 +449,19 @@ Item {
         : root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
+      // Retain the last snapshot while subT animates 1 -> 0 on exit so parent icons smoothly slide back right.
+      property var activeSubmenuSnapshot: null
+      Connections {
+        target: root
+        function onSubmenuSnapshotStackChanged() {
+          if (root.submenuSnapshotStack.length > 0) {
+            card.activeSubmenuSnapshot = root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
+          }
+        }
+      }
       readonly property var submenuSnapshot: (root.submenuSnapshotStack.length > 0)
         ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
-        : null
+        : (subT > 0.01 ? activeSubmenuSnapshot : null)
       // Single continuous firmware-verified submenu collapse factor (explore_plugin: 250 ms):
       // 0 = full Level-1 XMB, 1 = settled Level-2 (cat shifts -257px/-10px, parent -> 316,
       // siblings -> 455 around focal Y with ◀ chevron, children slide in from +250px right).
@@ -768,14 +778,17 @@ Item {
       }
 
       // Firmware-verified PS3 Level-2 parent collapse layer (driven continuously by card.subT):
-      // - Selected parent item slides left from categoryAnchorCenterX -> submenuParentX (316), bright 0.92.
-      // - Level-1 siblings slide left from categoryAnchorCenterX -> submenuSibX (455) at 80px pitch, fading with distance.
+      // - Selected parent item slides left from categoryAnchorCenterX -> submenuParentX (316), shrinking 108 -> 62 px.
+      // - Level-1 siblings morph from their full carousel Y to collapsed 80px pitch at submenuSibX (455).
       // - Left-pointing ◀ chevron fades in at submenuSibX in the vacated parent slot.
       Item {
         id: submenuBreadcrumbLayer
         anchors.fill: parent
         visible: card.subT > 0.01 && card.submenuSnapshot !== null
         readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
+        readonly property real l1RowStep: Math.round(80 * card.hdScale)
+        readonly property real l1SelectedH: Math.round(132 * card.hdScale)
+        readonly property real l1RowH: Math.round(72 * card.hdScale)
 
         Repeater {
           model: card.submenuSnapshot ? card.submenuSnapshot.rows : []
@@ -789,22 +802,31 @@ Item {
             readonly property bool isParentSel: delta === 0
             readonly property real dstX: isParentSel ? card.submenuParentX : card.submenuSibX
             readonly property real curX: card.categoryAnchorCenterX + (dstX - card.categoryAnchorCenterX) * card.subT
-            readonly property real curY: submenuBreadcrumbLayer.focalCenterY + delta * Math.round(80 * card.hdScale)
+            // Morph Y continuously from Level-1 carousel slot -> collapsed 80px pitch around focalCenterY
+            readonly property real srcY: delta < 0
+              ? (categoryList.baseTopMargin - Math.round(44 * card.hdScale) + delta * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5)
+              : (delta === 0
+                ? submenuBreadcrumbLayer.focalCenterY
+                : (card.submenuFocalY + submenuBreadcrumbLayer.l1SelectedH + Math.round(42 * card.hdScale) + (delta - 1) * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5))
+            readonly property real dstY: submenuBreadcrumbLayer.focalCenterY + delta * Math.round(80 * card.hdScale)
+            readonly property real curY: srcY + (dstY - srcY) * card.subT
+            readonly property real fullA: isParentSel ? 1.0 : Math.max(0.0, 0.78 - dist * 0.12)
+            readonly property real setA: isParentSel ? 0.92 : Math.max(0.12, 0.42 - (dist - 1) * 0.05)
             visible: dist <= 5
-            width: Math.round(78 * card.hdScale)
-            height: Math.round(78 * card.hdScale)
+            width: Math.round(120 * card.hdScale)
+            height: Math.round(120 * card.hdScale)
             x: curX - width / 2
             y: curY - height / 2
-            opacity: (isParentSel ? 0.92 : Math.max(0.12, 0.42 - (dist - 1) * 0.05)) * card.subT
+            opacity: fullA + (setA - fullA) * card.subT
 
             Image {
               visible: modelData.kind === "app"
               anchors.centerIn: parent
-              width: Math.round((isParentSel ? 64 : 50) * card.hdScale)
+              width: Math.round((isParentSel ? (116 + (64 - 116) * card.subT) : (56 + (50 - 56) * card.subT)) * card.hdScale)
               height: width
               fillMode: Image.PreserveAspectFit
-              sourceSize.width: width * Screen.devicePixelRatio
-              sourceSize.height: height * Screen.devicePixelRatio
+              sourceSize.width: Math.round(116 * card.hdScale * Screen.devicePixelRatio)
+              sourceSize.height: sourceSize.width
               source: visible && root.appLibrary ? root.appLibrary.iconSource(modelData.appIcon) : ""
               asynchronous: true
             }
@@ -815,7 +837,7 @@ Item {
               text: modelData.icon || "•"
               color: "white"
               font.family: (modelData.iconFont && modelData.iconFont.length) ? modelData.iconFont : card.xmbFontFamily
-              font.pixelSize: Math.round((isParentSel ? 62 : 48) * card.hdScale)
+              font.pixelSize: Math.round((isParentSel ? (108 + (62 - 108) * card.subT) : (54 + (48 - 54) * card.subT)) * card.hdScale)
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.40)
             }
@@ -863,11 +885,11 @@ Item {
         spacing: 0
         visible: root.activeMenu !== "root" || root.filterText || root.dmenuActive
 
-        // Child column slides in from +250 px right as subT goes 0 -> 1 (and back on exit).
+        // Child column slides in from +250 px right as subT goes 0 -> 1; on exit, Level-1 fades back in as subT -> 0.
         transform: Translate {
           x: card.inSubmenu ? Math.round(250 * card.hdScale * (1.0 - card.subT)) : 0
         }
-        opacity: card.inSubmenu ? card.subT : 1.0
+        opacity: card.inSubmenu ? card.subT : (1.0 - card.subT)
 
         Text {
           width: 0
@@ -1760,7 +1782,7 @@ Item {
     root.rebuildDisplay()
   }
 
-  function setActiveMenu(id, pushHistory, fromPointer) {
+  function setActiveMenu(id, pushHistory, fromPointer, initialSelectedIndex) {
     panel.freezeCardTop()
     if (!root.item(id)) id = "root"
     if (pushHistory && id !== root.activeMenu) {
@@ -1783,9 +1805,10 @@ Item {
     root.activeMenu = id
     root.syncCategoryToMenu()
     root.filterText = ""
-    root.selectedIndex = 0
+    root.selectedIndex = (initialSelectedIndex !== undefined && initialSelectedIndex >= 0) ? initialSelectedIndex : 0
     root.cursorActive = true
     root.rebuildDisplay()
+    if (root.selectedIndex >= displayModel.count) root.selectedIndex = Math.max(0, displayModel.count - 1)
     root.invalidateVolatileProvider(id)
     root.loadProviderForMenu(id)
   }
@@ -1800,10 +1823,7 @@ Item {
         : null
       root.navStack = root.navStack.slice(0, root.navStack.length - 1)
       root.submenuSnapshotStack = root.submenuSnapshotStack.slice(0, Math.max(0, root.submenuSnapshotStack.length - 1))
-      root.setActiveMenu(previous, false)
-      if (prevSnap && prevSnap.selectedIndex >= 0 && prevSnap.selectedIndex < displayModel.count) {
-        root.selectedIndex = prevSnap.selectedIndex
-      }
+      root.setActiveMenu(previous, false, false, prevSnap ? prevSnap.selectedIndex : 0)
       return true
     }
 
