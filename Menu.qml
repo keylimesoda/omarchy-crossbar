@@ -399,18 +399,19 @@ Item {
         font.letterSpacing: 1.5
       }
 
-      // PS3 XMB top-right clock box with date/time and live analog dial.
+      // PS3 XMB top-right clock bar (bleeds to right screen edge, 12-hour M/d h:mm AP + live analog dial).
       Rectangle {
         id: xmbClockBox
         anchors.right: parent.right
+        anchors.rightMargin: -card.anchors.rightMargin - 2
         anchors.top: parent.top
         anchors.topMargin: -Math.round(panel.height * 0.05)
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.max(Math.round(280 * card.uiScale), clockRow.implicitWidth + Math.round(40 * card.uiScale))
-        height: Math.round(36 * card.uiScale)
-        color: Qt.rgba(0, 0, 0, 0.14)
-        border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.55)
+        width: Math.max(Math.round(panel.width * 0.30), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(44 * card.uiScale))
+        height: Math.round(40 * card.uiScale)
+        color: Qt.rgba(1, 1, 1, 0.05)
+        border.width: Math.max(1, Math.round(card.uiScale))
+        border.color: Qt.rgba(1, 1, 1, 0.58)
 
         property date now: new Date()
         Timer {
@@ -424,17 +425,17 @@ Item {
         Row {
           id: clockRow
           anchors.right: parent.right
-          anchors.rightMargin: Math.round(14 * card.uiScale)
+          anchors.rightMargin: card.anchors.rightMargin + Math.round(10 * card.uiScale)
           anchors.verticalCenter: parent.verticalCenter
           spacing: Math.round(10 * card.uiScale)
 
           Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: Qt.formatDateTime(xmbClockBox.now, "d/M HH:mm")
+            text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
             color: "white"
             font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(15 * card.uiScale)
-            font.weight: Font.Light
+            font.pixelSize: Math.round(16 * card.uiScale)
+            font.weight: Font.Normal
             style: Text.Raised
             styleColor: Qt.rgba(0, 0, 0, 0.55)
           }
@@ -442,7 +443,7 @@ Item {
           Canvas {
             id: analogDial
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(18 * card.uiScale)
+            width: Math.round(20 * card.uiScale)
             height: width
             antialiasing: true
             property date timeValue: xmbClockBox.now
