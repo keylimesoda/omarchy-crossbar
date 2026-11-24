@@ -784,7 +784,7 @@ Item {
       Item {
         id: submenuBreadcrumbLayer
         anchors.fill: parent
-        visible: card.subT > 0.01 && card.submenuSnapshot !== null
+        visible: card.subT > 0.02 && card.submenuSnapshot !== null
         readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
         readonly property real l1RowStep: Math.round(80 * card.hdScale)
         readonly property real l1SelectedH: Math.round(132 * card.hdScale)
@@ -969,7 +969,7 @@ Item {
 
               Image {
                 id: xmbAppImage
-                visible: xmbRow.kind === "app"
+                visible: xmbRow.kind === "app" && (card.inSubmenu || card.subT <= 0.02)
                 width: xmbRow.selected ? Math.round(116 * card.hdScale) : Math.round(56 * card.hdScale)
                 height: width
                 anchors.horizontalCenter: xmbRowIcon.horizontalCenter
@@ -983,7 +983,7 @@ Item {
 
               Text {
                 id: xmbRowIcon
-                visible: xmbRow.kind !== "app"
+                visible: xmbRow.kind !== "app" && (card.inSubmenu || card.subT <= 0.02)
                 width: Math.round(144 * card.hdScale)
                 height: parent.height
                 anchors.left: parent.left
