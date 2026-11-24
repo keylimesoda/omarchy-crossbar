@@ -118,7 +118,7 @@ Item {
       onTriggered: panel.fadeOutActive = false
     }
 
-    Connections {
+      Connections {
       target: root
       function onOpenedChanged() {
         if (root.opened) {
@@ -126,6 +126,7 @@ Item {
           panel.fadeOutActive = false
           xmbFadeOutAnim.stop()
           card.opacity = 0.0
+          card.scale = 0.985
           xmbFadeInAnim.restart()
         } else if (panel.visible) {
           xmbFadeInAnim.stop()
@@ -288,12 +289,15 @@ Item {
       opacity: 0.0
 
       // Authentic PS3 In-Game XMB summon/dismiss choreography:
-      // 70 ms stagger behind the ribbon fade-in, then fade straight in place over 240 ms;
-      // reverse smoothly over 180 ms on dismiss.
+      // 70 ms stagger behind the ribbon fade-in, then fade straight in place over 240 ms
+      // with subtle 0.985 -> 1.0 settle; reverse smoothly over 180 ms on dismiss.
       SequentialAnimation {
         id: xmbFadeInAnim
         PauseAnimation { duration: 70 }
-        NumberAnimation { target: card; property: "opacity"; from: 0.0; to: 1.0; duration: 240; easing.type: Easing.OutCubic }
+        ParallelAnimation {
+          NumberAnimation { target: card; property: "opacity"; from: 0.0; to: 1.0; duration: 240; easing.type: Easing.OutCubic }
+          NumberAnimation { target: card; property: "scale"; from: 0.985; to: 1.0; duration: 260; easing.type: Easing.OutCubic }
+        }
       }
       NumberAnimation {
         id: xmbFadeOutAnim
@@ -665,23 +669,23 @@ Item {
               + (index - root.categoryIndex) * categoryList.categoryStep
               - width / 2
             z: selected ? 2 : 1
-            scale: selected ? 1.16 : 0.86
-            opacity: selected ? 1.0 : (distance === 1 ? 0.62 : 0.42)
+            scale: selected ? 1.45 : 1.0
+            opacity: selected ? 1.0 : 0.55
             visible: x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
 
-            Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
+            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
+            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
             Text {
               id: categoryIcon
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: parent.top
               text: category.icon
-              color: Qt.rgba(1, 1, 1, category.selected ? 0.86 : 0.68)
+              color: Qt.rgba(1, 1, 1, category.selected ? 0.90 : 0.72)
               font.family: category.iconFont.length ? category.iconFont : card.xmbFontFamily
-              font.pixelSize: Math.round(88 * card.hdScale)
+              font.pixelSize: Math.round(64 * card.hdScale)
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.45)
             }
@@ -689,13 +693,13 @@ Item {
             Text {
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: categoryIcon.bottom
-              anchors.topMargin: Math.round(-14 * card.hdScale)
+              anchors.topMargin: Math.round(-8 * card.hdScale)
               text: category.label
               color: "white"
               opacity: category.selected ? 1.0 : 0.0
               Behavior on opacity { NumberAnimation { duration: 150 } }
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.round(23 * card.hdScale)
+              font.pixelSize: Math.round(16 * card.hdScale)
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.25)
             }
@@ -878,8 +882,8 @@ Item {
                   : selectedY + selectedHeight + Math.round(42 * card.hdScale) + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
               opacity: baseOpacity * barFade * bottomFade
-              Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-              Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+              Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
+              Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
               Image {
                 id: xmbAppImage
@@ -909,7 +913,7 @@ Item {
                 font.pixelSize: xmbRow.selected ? Math.round(108 * card.hdScale) : Math.round(54 * card.hdScale)
                 style: Text.Raised
                 styleColor: Qt.rgba(0, 0, 0, 0.35)
-                Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
+                Behavior on font.pixelSize { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
               }
 
               Column {
@@ -950,7 +954,7 @@ Item {
                     style: xmbRow.selected ? Text.Normal : Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.25)
                     elide: Text.ElideRight
-                    Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
+                    Behavior on font.pixelSize { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
                   }
                 }
 
