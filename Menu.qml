@@ -426,9 +426,9 @@ Item {
         font.letterSpacing: 1.5
       }
 
-      // Authentic PS3 XMB top-right clock indicator (xmb_plugin_normal.rco -> page_xmb_indicator):
-      // 560x82 px @ 1080p, flush right, 74 px from top, 26 px right inset, tex_indi_bg 9-slice,
-      // single right-aligned "M/d h:mm AP" string beside Sony's tex_busy analog clock sprites.
+      // Authentic PS3 XMB top-right clock indicator (xmb_plugin_normal.rco + layout_grid_table_1080.txt):
+      // 560x59 px visible hairline-to-hairline @ 1080p, flush right, 74 px from top;
+      // clock + dial right-aligned to the 90% TV overscan safe zone (~115 px from right edge).
       Item {
         id: xmbClockBox
         anchors.right: parent.right
@@ -437,12 +437,12 @@ Item {
         anchors.topMargin: Math.round(74 * card.hdScale) - card.anchors.topMargin
         visible: !(root.filterText && root.mode !== "input")
         width: Math.round(560 * card.hdScale)
-        height: Math.round(82 * card.hdScale)
+        height: Math.round(59 * card.hdScale)
 
         // Sony 24x24 9-slice tex_indi_bg (8 px top/bottom/left, open on right), scaled from 1080p ref.
         BorderImage {
           width: 560
-          height: 82
+          height: 59
           transformOrigin: Item.TopLeft
           scale: card.hdScale
           source: "file:///home/ric/Modern-XMB/assets/ui/tex_indi_bg.png"
@@ -461,20 +461,20 @@ Item {
           onTriggered: xmbClockBox.now = new Date()
         }
 
-        // Right-aligned date/time string + crisp 4K vector analog clock dial.
+        // Right-aligned to Sony's 90% TV safe-zone margin (96 px + 19 px = 115 px @ 1080p).
         Row {
           anchors.right: parent.right
-          anchors.rightMargin: Math.round(38 * card.hdScale)
+          anchors.rightMargin: Math.round(115 * card.hdScale)
           anchors.verticalCenter: parent.verticalCenter
-          spacing: Math.round(14 * card.hdScale)
+          spacing: Math.round(12 * card.hdScale)
 
           Text {
             anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: Math.round(-1 * card.hdScale)
+            anchors.verticalCenterOffset: Math.round(-0.5 * card.hdScale)
             text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
             color: "white"
             font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(25 * card.hdScale)
+            font.pixelSize: Math.round(22 * card.hdScale)
             font.weight: Font.Normal
             style: Text.Raised
             styleColor: Qt.rgba(0, 0, 0, 0.55)
@@ -483,8 +483,8 @@ Item {
           Item {
             id: busyClockIcon
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(34 * card.hdScale)
-            height: Math.round(34 * card.hdScale)
+            width: Math.round(30 * card.hdScale)
+            height: Math.round(30 * card.hdScale)
 
             Canvas {
               id: analogDial
