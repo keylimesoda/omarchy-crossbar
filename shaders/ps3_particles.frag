@@ -85,9 +85,13 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float scale, float layerDepth,
     float ageF = (age < 0.12) ? (age / 0.12) : ((age > 0.75) ? ((1.0 - age) / 0.25) : 1.0);
     if (ageF < 0.01) return vec3(0.0);
 
+    // Left-to-right density falloff: densest on the left of the wave, thinning toward the right
+    float rightFade = smoothstep(0.15, 0.92, screenUV.x);
+    float effThreshold = mix(densityThreshold, min(0.94, densityThreshold + 0.26), rightFade);
+
     vec2 cycleSeed = cell + vec2(cycle * 7.13 + seedOff * 31.1, cycle * 3.71 + seedOff * 17.9);
     float spawnId = hash12(cycleSeed);
-    if (spawnId < densityThreshold) return vec3(0.0);
+    if (spawnId < effThreshold) return vec3(0.0);
 
     float h0 = hash12(cycleSeed + vec2(17.3, 5.1));
     float h1 = hash12(cycleSeed + vec2(3.7, 29.4));
@@ -97,9 +101,11 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float scale, float layerDepth,
              + vec2(sin(pc.time * (0.25 + h0 * 0.35) + spawnId * 25.0),
                     cos(pc.time * (0.22 + h1 * 0.30) + spawnId * 19.0)) * 0.10;
 
+    // Asymmetric wave-band envelope: cuts off cleanly above the crest, trails softly below
     float bandY = 0.485 - 0.048 * sin((screenUV.x - 0.14) * 2.5);
     float dy = screenUV.y - bandY;
-    float bandMask = exp(-(dy * dy) / (bandSigma * bandSigma));
+    float asymSigma = (dy < 0.0) ? (bandSigma * 0.42) : (bandSigma * 1.25);
+    float bandMask = exp(-(dy * dy) / (asymSigma * asymSigma));
     if (bandMask < 0.02) return vec3(0.0);
 
     // Physical Depth of Field: defocus enlarges radius AND dims intensity (energy conservation)
