@@ -89,10 +89,10 @@ void main() {
     vec2 velDelta = sampleFrame(i1, gridCoord) - sampleFrame(i0, gridCoord);
     vNrm = normalize(staticNrm + vec3(-velDelta.y, velDelta.x, 0.0) * 3.5);
 
-    // Apply smooth 2nd-order navigation swell, horizontal glide, and PS3 vertical placement
+    // Apply smooth 2nd-order navigation swell, horizontal glide, and PS3 diagonal sweep
     ndc.y += impulseDy(ndc.x) * 0.16;
     ndc.x -= pc.waveVelX * 0.12 * (0.6 + 0.4 * (1.0 - abs(qt_MultiTexCoord0.y * 2.0 - 1.0)));
-    ndc.y = ndc.y * pc.scaleY + 0.12;
+    ndc.y = ndc.y * pc.scaleY + 0.24 + ndc.x * 0.11;
     vUV = qt_MultiTexCoord0;
 
     vec2 res = max(pc.resolution, vec2(1.0));

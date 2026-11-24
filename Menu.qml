@@ -145,7 +145,7 @@ Item {
         property vector2d resolution: Qt.vector2d(width, height)
         property real framePhase: 21
         property real alpha: 0.11
-        property real scaleY: 0.96
+        property real scaleY: 1.26
         property real waveVelX: root.waveVelX * 0.7
         property real waveVelY: root.waveVelY * 0.7
         vertexShader: "shaders/ps3_cap.vert.qsb"
@@ -174,7 +174,7 @@ Item {
         property vector2d resolution: Qt.vector2d(width, height)
         property real framePhase: 0
         property real alpha: 0.17
-        property real scaleY: 0.84
+        property real scaleY: 1.15
         property real waveVelX: root.waveVelX
         property real waveVelY: root.waveVelY
         vertexShader: "shaders/ps3_cap.vert.qsb"

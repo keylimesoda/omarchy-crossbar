@@ -91,9 +91,9 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float bandY, float scale, float la
     float ageF = (age < 0.12) ? (age / 0.12) : ((age > 0.75) ? ((1.0 - age) / 0.25) : 1.0);
     if (ageF < 0.01) return vec3(0.0);
 
-    // Left-to-right density falloff: densest on the left of the wave, thinning toward the right
-    float rightFade = smoothstep(0.15, 0.92, screenUV.x);
-    float effThreshold = mix(densityThreshold, min(0.94, densityThreshold + 0.26), rightFade);
+    // Gentle left-to-right density taper (keeps the sweeping right crest richly dusted too)
+    float rightFade = smoothstep(0.25, 0.96, screenUV.x);
+    float effThreshold = mix(densityThreshold, min(0.92, densityThreshold + 0.08), rightFade);
 
     vec2 cycleSeed = cell + vec2(cycle * 7.13 + seedOff * 31.1, cycle * 3.71 + seedOff * 17.9);
     float spawnId = hash12(cycleSeed);
@@ -140,7 +140,8 @@ void main() {
     float t = pc.time;
 
     vec3 accum = vec3(0.0);
-    float bandY = 0.485 - 0.048 * sin((uv.x - 0.14) * 2.5);
+    // Diagonal sweep matching PS3 ribbon (lower-left ~0.57 rising to upper-right crest ~0.37)
+    float bandY = 0.57 - uv.x * 0.16 - 0.045 * sin(uv.x * 3.14159);
 
     // 4 in-focus crisp tumbling-flake layers tightly carpeting the ribbon (depth ~5.5-6.1)
     accum += flakeLayer(aspectUV, uv, bandY, 34.0, 5.80, 0.42, 0.085, pxScale, 1.0);
@@ -172,7 +173,7 @@ void main() {
         float wanderX = sin(t * (0.12 + h0 * 0.14) + fi * 2.3) * 0.40 + (age - 0.5) * 0.28;
         float wanderY = sin(t * (0.15 + h1 * 0.16) + fi * 1.7) * 0.16 - (age - 0.5) * 0.10;
         float px = mod(eye.x + wanderX - pc.parallaxX * depthFactor + 7.73, 13.24) - 7.73;
-        float py = eye.y * 0.60 + 0.12 + wanderY + pc.parallaxY * depthFactor * 0.45;
+        float py = eye.y * 0.68 + 0.18 + (px * 0.04) + wanderY + pc.parallaxY * depthFactor * 0.45;
 
         vec2 ndc = vec2(px / (depth * 0.58 * aspect), py / (depth * 0.58));
         vec2 centerPx = vec2((ndc.x * 0.5 + 0.5) * res.x, (0.5 - ndc.y * 0.5) * res.y);
