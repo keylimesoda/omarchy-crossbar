@@ -1009,7 +1009,7 @@ Item {
               height: width
               fillMode: Image.PreserveAspectFit
               sourceSize.width: Math.round(116 * card.hdScale * Screen.devicePixelRatio)
-              sourceSize.height: sourceSize.width
+              sourceSize.height: Math.round(116 * card.hdScale * Screen.devicePixelRatio)
               source: visible && root.appLibrary ? root.appLibrary.iconSource(modelData.appIcon) : ""
               asynchronous: true
             }
