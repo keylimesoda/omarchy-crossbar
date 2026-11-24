@@ -404,6 +404,7 @@ Item {
         id: xmbClockBox
         anchors.right: parent.right
         anchors.top: parent.top
+        anchors.topMargin: -Math.round(panel.height * 0.05)
         visible: !(root.filterText && root.mode !== "input")
         width: Math.max(Math.round(280 * card.uiScale), clockRow.implicitWidth + Math.round(40 * card.uiScale))
         height: Math.round(36 * card.uiScale)
@@ -487,7 +488,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: Math.max(120, panel.height * 0.24)
+        anchors.topMargin: Math.max(80, panel.height * 0.14)
         height: Math.max(104, panel.height * 0.11)
         clip: false
         visible: !root.dmenuActive
@@ -667,7 +668,7 @@ Item {
               required property int childCount
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
-              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(14 * card.uiScale)
+              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(46 * card.uiScale)
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
               // the original label verbatim when the row is selected.
@@ -805,7 +806,7 @@ Item {
 
           Text {
             x: Math.round(48 * card.uiScale)
-            y: categoryList.y + categoryList.height + Math.round(16 * card.uiScale)
+            y: categoryList.y + categoryList.height + Math.round(46 * card.uiScale)
             visible: root.dmenuActive && root.mode !== "input" && displayModel.count === 0
             text: root.filterText ? "No matches" : "Nothing here yet"
             color: "white"

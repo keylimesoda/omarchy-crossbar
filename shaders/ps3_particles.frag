@@ -66,8 +66,8 @@ vec3 glitterLayer(vec2 aspectUV, vec2 screenUV, float scale, vec2 vel, float dep
                 + vec2(sin(pc.time * (0.28 + h0 * 0.35) + id * 20.0),
                        cos(pc.time * (0.24 + h1 * 0.35) + id * 17.0)) * 0.14;
 
-    // Wave-band vertical envelope hugging the SPU ribbon contour
-    float bandY = 0.545 - 0.048 * sin((screenUV.x - 0.14) * 2.5);
+    // Wave-band vertical envelope hugging the PS3-aligned SPU ribbon contour
+    float bandY = 0.485 - 0.048 * sin((screenUV.x - 0.14) * 2.5);
     float dy = screenUV.y - bandY;
     float bandMask = exp(-(dy * dy) / (bandSigma * bandSigma));
     if (bandMask < 0.02) return vec3(0.0);
@@ -117,7 +117,7 @@ void main() {
         float wanderX = sin(t * (0.14 + h0 * 0.16) + fi * 2.3) * 0.30;
         float wanderY = sin(t * (0.18 + h1 * 0.20) + fi * 1.7) * 0.12;
         float px = mod(eye.x + wanderX - pc.parallaxX * depthFactor + 7.73, 13.24) - 7.73;
-        float py = eye.y * 0.65 + wanderY + pc.parallaxY * depthFactor * 0.45;
+        float py = eye.y * 0.65 + 0.12 + wanderY + pc.parallaxY * depthFactor * 0.45;
 
         vec2 ndc = vec2(px / (depth * 0.58 * aspect), py / (depth * 0.58));
         vec2 centerPx = vec2((ndc.x * 0.5 + 0.5) * res.x, (0.5 - ndc.y * 0.5) * res.y);

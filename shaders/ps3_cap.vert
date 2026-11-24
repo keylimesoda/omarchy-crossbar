@@ -99,10 +99,10 @@ void main() {
     vec3 staticNrm = texture(normalMap, nrmUV).rgb * 2.0 - 1.0;
     vNrm = normalize(staticNrm + vec3(-deltaSlope.y, deltaSlope.x, 0.0) * 0.55);
 
-    // Apply smooth 2nd-order navigation swell & subtle horizontal silk glide
+    // Apply smooth 2nd-order navigation swell, horizontal glide, and PS3 vertical placement
     ndc.y += impulseDy(ndc.x) * 0.16;
     ndc.x -= pc.waveVelX * 0.12 * (0.6 + 0.4 * (1.0 - abs(qt_MultiTexCoord0.y * 2.0 - 1.0)));
-    ndc.y *= pc.scaleY;
+    ndc.y = ndc.y * pc.scaleY + 0.12;
     vUV = qt_MultiTexCoord0;
 
     vec2 res = max(pc.resolution, vec2(1.0));
