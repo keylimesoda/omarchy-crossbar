@@ -851,19 +851,6 @@ Item {
                 asynchronous: true
               }
 
-              MultiEffect {
-                source: xmbRowIcon
-                anchors.fill: xmbRowIcon
-                visible: xmbRow.selected && xmbRow.kind !== "app"
-                autoPaddingEnabled: true
-                blurEnabled: true
-                blur: 0.70
-                blurMax: 24
-                colorization: 1.0
-                colorizationColor: "#ffffff"
-                opacity: card.phTextGlowAlpha
-              }
-
               Text {
                 id: xmbRowIcon
                 visible: xmbRow.kind !== "app"
@@ -876,8 +863,8 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 font.family: xmbRow.iconFont.length ? xmbRow.iconFont : card.xmbFontFamily
                 font.pixelSize: xmbRow.selected ? Math.round(108 * card.hdScale) : Math.round(54 * card.hdScale)
-                style: xmbRow.selected ? Text.Normal : Text.Raised
-                styleColor: Qt.rgba(0, 0, 0, 0.45)
+                style: Text.Raised
+                styleColor: Qt.rgba(0, 0, 0, 0.35)
                 Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
               }
 
