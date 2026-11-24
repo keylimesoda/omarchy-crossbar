@@ -602,6 +602,21 @@ Item {
       // siblings -> 455 around focal Y with ◀ chevron, children slide in from +250px right).
       property real subT: inSubmenu ? 1.0 : 0.0
       Behavior on subT { NumberAnimation { duration: 240; easing.type: Easing.OutQuart } }
+      // Arbitrary-depth (L2 <-> L3 <-> L4) transition driver mirroring L1 <-> L2 choreography
+      // while keeping the top-left category icon parked at subT = 1.
+      property int lastNavDepth: 0
+      property int deepDir: 0       // +1 = diving deeper (L2->L3), -1 = backing out (L3->L2), 0 = idle
+      property real deepT: 1.0
+      NumberAnimation {
+        id: deepTAnim
+        target: card
+        property: "deepT"
+        from: 0.0
+        to: 1.0
+        duration: 240
+        easing.type: Easing.OutQuart
+        onRunningChanged: if (!running) card.deepDir = 0
+      }
       // Sony PAF 2-beat label stagger (xmb_plugin.prx 0x18060): 100 ms pause while outgoing labels
       // clear fast (~110 ms) and icons glide ~65% home, then 200 ms OutCubic fade-in for incoming labels.
       property real subLabelReveal: 1.0
@@ -610,10 +625,27 @@ Item {
         PauseAnimation { duration: 100 }
         NumberAnimation { target: card; property: "subLabelReveal"; from: 0.0; to: 1.0; duration: 200; easing.type: Easing.OutCubic }
       }
-      onInSubmenuChanged: {
-        subLabelRevealAnim.stop()
-        subLabelReveal = 0.0
-        subLabelRevealAnim.restart()
+      Connections {
+        target: root
+        function onNavStackChanged() {
+          var nextDepth = root.navStack.length
+          var prevDepth = card.lastNavDepth
+          card.lastNavDepth = nextDepth
+          if (nextDepth === prevDepth) return
+          if (prevDepth > 0 && nextDepth > 0) {
+            deepTAnim.stop()
+            card.deepDir = (nextDepth > prevDepth) ? 1 : -1
+            card.deepT = 0.0
+            deepTAnim.restart()
+          } else {
+            deepTAnim.stop()
+            card.deepDir = 0
+            card.deepT = 1.0
+          }
+          subLabelRevealAnim.stop()
+          card.subLabelReveal = 0.0
+          subLabelRevealAnim.restart()
+        }
       }
       readonly property real submenuParentX: categoryAnchorCenterX - Math.round(252 * hdScale)
       readonly property real submenuSibX: categoryAnchorCenterX - Math.round(113 * hdScale)
@@ -925,12 +957,15 @@ Item {
         }
       }
 
-      // Firmware-verified PS3 Level-2 parent collapse layer (shown while inSubmenu; on exit,
-      // the real Level-1 xmbRow delegates themselves glide back right from subT 1 -> 0 with zero handoff).
+      // Firmware-verified PS3 Level-2+ parent collapse layer (works seamlessly at L2, L3, L4...;
+      // on exit, the real returning xmbRow delegates glide right with zero handoff).
       Item {
         id: submenuBreadcrumbLayer
         anchors.fill: parent
         visible: card.subT > 0.001
+        readonly property real collapseT: (card.deepDir === 1) ? card.deepT : card.subT
+        readonly property real layerFade: (card.deepDir === -1) ? card.deepT : 1.0
+        opacity: layerFade
         readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
         readonly property real l1RowStep: Math.round(80 * card.hdScale)
         readonly property real l1SelectedH: Math.round(132 * card.hdScale)
@@ -947,15 +982,17 @@ Item {
             readonly property int dist: Math.abs(delta)
             readonly property bool isParentSel: delta === 0
             readonly property real dstX: isParentSel ? card.submenuParentX : card.submenuSibX
-            readonly property real curX: card.categoryAnchorCenterX + (dstX - card.categoryAnchorCenterX) * card.subT
-            // Morph Y continuously from Level-1 carousel slot -> collapsed 80px pitch around focalCenterY
+            readonly property real curX: card.categoryAnchorCenterX + (dstX - card.categoryAnchorCenterX) * submenuBreadcrumbLayer.collapseT
+            // Morph Y continuously from previous level's carousel slot -> collapsed 80px pitch around focalCenterY
             readonly property real srcY: delta < 0
-              ? (categoryList.baseTopMargin - Math.round(44 * card.hdScale) + delta * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5)
+              ? (card.deepDir === 1
+                ? (card.submenuFocalY - Math.round(12 * card.hdScale) + delta * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5)
+                : (categoryList.baseTopMargin - Math.round(44 * card.hdScale) + delta * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5))
               : (delta === 0
                 ? submenuBreadcrumbLayer.focalCenterY
-                : (card.submenuFocalY + submenuBreadcrumbLayer.l1SelectedH + Math.round(42 * card.hdScale) + (delta - 1) * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5))
+                : (card.submenuFocalY + submenuBreadcrumbLayer.l1SelectedH + Math.round((card.deepDir === 1 ? 18 : 42) * card.hdScale) + (delta - 1) * submenuBreadcrumbLayer.l1RowStep + submenuBreadcrumbLayer.l1RowH * 0.5))
             readonly property real dstY: submenuBreadcrumbLayer.focalCenterY + delta * Math.round(80 * card.hdScale)
-            readonly property real curY: srcY + (dstY - srcY) * card.subT
+            readonly property real curY: srcY + (dstY - srcY) * submenuBreadcrumbLayer.collapseT
             readonly property real fullA: isParentSel ? 1.0 : Math.max(0.0, 0.78 - dist * 0.12)
             readonly property real setA: isParentSel ? 0.92 : Math.max(0.12, 0.42 - (dist - 1) * 0.05)
             visible: dist <= 5
@@ -963,12 +1000,12 @@ Item {
             height: Math.round(120 * card.hdScale)
             x: curX - width / 2
             y: curY - height / 2
-            opacity: fullA + (setA - fullA) * card.subT
+            opacity: fullA + (setA - fullA) * submenuBreadcrumbLayer.collapseT
 
             Image {
               visible: modelData.kind === "app"
               anchors.centerIn: parent
-              width: Math.round((isParentSel ? (116 + (64 - 116) * card.subT) : (56 + (50 - 56) * card.subT)) * card.hdScale)
+              width: Math.round((isParentSel ? (116 + (64 - 116) * submenuBreadcrumbLayer.collapseT) : (56 + (50 - 56) * submenuBreadcrumbLayer.collapseT)) * card.hdScale)
               height: width
               fillMode: Image.PreserveAspectFit
               sourceSize.width: Math.round(116 * card.hdScale * Screen.devicePixelRatio)
@@ -983,15 +1020,15 @@ Item {
               text: modelData.icon || "•"
               color: Qt.rgba(1, 1, 1, isParentSel ? 0.94 : 0.80)
               font.family: (modelData.iconFont && modelData.iconFont.length) ? modelData.iconFont : card.xmbFontFamily
-              font.pixelSize: Math.round((isParentSel ? (108 + (62 - 108) * card.subT) : (54 + (48 - 54) * card.subT)) * card.hdScale)
+              font.pixelSize: Math.round((isParentSel ? (108 + (62 - 108) * submenuBreadcrumbLayer.collapseT) : (54 + (48 - 54) * submenuBreadcrumbLayer.collapseT)) * card.hdScale)
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.35)
             }
 
-            // Outgoing Level-1 title + subtitle clear fast (~110 ms) as parent icon slides left,
+            // Outgoing parent title + subtitle clear fast (~110 ms) as parent icon slides left,
             // so child text never collides mid-flight (xmb_plugin.prx 2-beat choreography).
             Column {
-              readonly property real outAlpha: Math.max(0.0, 1.0 - card.subT * 2.2)
+              readonly property real outAlpha: Math.max(0.0, 1.0 - submenuBreadcrumbLayer.collapseT * 2.2)
               visible: outAlpha > 0.01 && (modelData.label || "").length > 0
               x: parent.width * 0.5 + Math.round((isParentSel ? 90 : 54) * card.hdScale)
               width: Math.round(700 * card.hdScale)
@@ -1066,11 +1103,13 @@ Item {
         spacing: 0
         visible: root.activeMenu !== "root" || root.filterText || root.dmenuActive
 
-        // Child column slides in from +250 px right; waits 100 ms then fades in over 200 ms (subLabelReveal).
+        // Child column slides in from +250 px right on L1->L2 or L2->L3+ drilldown (not on L3->L2 return).
         transform: Translate {
-          x: card.inSubmenu ? Math.round(250 * card.hdScale * (1.0 - card.subT)) : 0
+          x: (card.inSubmenu && card.deepDir !== -1)
+            ? Math.round(250 * card.hdScale * (1.0 - (card.deepDir === 1 ? card.deepT : card.subT)))
+            : 0
         }
-        opacity: card.inSubmenu ? card.subLabelReveal : 1.0
+        opacity: (card.inSubmenu && card.deepDir !== -1) ? card.subLabelReveal : 1.0
 
         Text {
           width: 0
@@ -1142,9 +1181,11 @@ Item {
                 : (index === root.selectedIndex
                   ? selectedY
                   : selectedY + selectedHeight + Math.round(card.inSubmenu ? 18 : 42) * card.hdScale + (index - root.selectedIndex - 1) * rowStep)
-              // On Level-2 exit (!inSubmenu while subT animates 1 -> 0), each real Level-1 xmbRow
-              // glides directly from its collapsed breadcrumb/sibling slot back to (0, 0) with zero handoff.
-              readonly property real exitT: (!card.inSubmenu && !root.dmenuActive && !root.filterText) ? card.subT : 0.0
+              // On any back-out (L2->L1 via subT 1->0, or L3+->L2+ via deepDir === -1), each real
+              // returning xmbRow glides directly from its collapsed breadcrumb/sibling slot back to (0, 0).
+              readonly property real exitT: (card.deepDir === -1)
+                ? (1.0 - card.deepT)
+                : ((!card.inSubmenu && !root.dmenuActive && !root.filterText) ? card.subT : 0.0)
               readonly property real collapsedCenterY: (card.submenuFocalY + Math.round(66 * card.hdScale)) + (index - root.selectedIndex) * Math.round(80 * card.hdScale)
               readonly property real exitOffsetX: (selected ? -Math.round(252 * card.hdScale) : -Math.round(113 * card.hdScale)) * exitT
               readonly property real exitOffsetY: (collapsedCenterY - (y + height * 0.5)) * exitT
@@ -1200,7 +1241,7 @@ Item {
                 spacing: Math.round(2 * card.hdScale)
                 property real idleOpacity: (xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0
                 Behavior on idleOpacity { NumberAnimation { duration: card.navIdle ? 450 : 120; easing.type: Easing.OutCubic } }
-                opacity: idleOpacity * (card.inSubmenu ? 1.0 : card.subLabelReveal)
+                opacity: idleOpacity * ((!card.inSubmenu || card.deepDir === -1) ? card.subLabelReveal : 1.0)
 
                 Item {
                   width: parent.width
