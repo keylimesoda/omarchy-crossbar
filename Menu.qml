@@ -399,19 +399,43 @@ Item {
         font.letterSpacing: 1.5
       }
 
-      // PS3 XMB top-right clock bar (bleeds to right screen edge, 12-hour M/d h:mm AP + live analog dial).
+      // PS3 XMB top-right glass clock bar (rounded left corners, inner edge glow,
+      // edge-bleeding right side, drop-shadowed 12-hour text + chunky analog dial).
       Rectangle {
         id: xmbClockBox
         anchors.right: parent.right
-        anchors.rightMargin: -card.anchors.rightMargin - 2
+        anchors.rightMargin: -card.anchors.rightMargin - Math.round(6 * card.uiScale)
         anchors.top: parent.top
         anchors.topMargin: -Math.round(panel.height * 0.05)
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.max(Math.round(panel.width * 0.30), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(44 * card.uiScale))
-        height: Math.round(40 * card.uiScale)
-        color: Qt.rgba(1, 1, 1, 0.05)
-        border.width: Math.max(1, Math.round(card.uiScale))
-        border.color: Qt.rgba(1, 1, 1, 0.58)
+        width: Math.max(Math.round(panel.width * 0.29), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(48 * card.uiScale))
+        height: Math.round(42 * card.uiScale)
+        radius: Math.round(5 * card.uiScale)
+        border.width: Math.max(1, Math.round(1.2 * card.uiScale))
+        border.color: Qt.rgba(1, 1, 1, 0.72)
+
+        // Frosted glass top/bottom inner glow bevel
+        gradient: Gradient {
+          GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.22) }
+          GradientStop { position: 0.18; color: Qt.rgba(1, 1, 1, 0.05) }
+          GradientStop { position: 0.82; color: Qt.rgba(1, 1, 1, 0.04) }
+          GradientStop { position: 1.00; color: Qt.rgba(1, 1, 1, 0.20) }
+        }
+
+        // Soft left-edge inner glass highlight matching top/bottom bevel
+        Rectangle {
+          anchors.left: parent.left
+          anchors.top: parent.top
+          anchors.bottom: parent.bottom
+          anchors.margins: parent.border.width
+          width: Math.round(10 * card.uiScale)
+          radius: Math.max(0, parent.radius - 1)
+          gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.20) }
+            GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
+          }
+        }
 
         property date now: new Date()
         Timer {
@@ -422,63 +446,80 @@ Item {
           onTriggered: xmbClockBox.now = new Date()
         }
 
-        Row {
-          id: clockRow
+        Item {
+          id: clockRowWrap
           anchors.right: parent.right
-          anchors.rightMargin: card.anchors.rightMargin + Math.round(10 * card.uiScale)
+          anchors.rightMargin: card.anchors.rightMargin + Math.round(16 * card.uiScale)
           anchors.verticalCenter: parent.verticalCenter
-          spacing: Math.round(10 * card.uiScale)
+          width: clockRow.implicitWidth
+          height: clockRow.implicitHeight
 
-          Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
-            color: "white"
-            font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(16 * card.uiScale)
-            font.weight: Font.Normal
-            style: Text.Raised
-            styleColor: Qt.rgba(0, 0, 0, 0.55)
+          // Crisp PS3 drop shadow under both date/time text and analog dial
+          MultiEffect {
+            source: clockRow
+            anchors.fill: clockRow
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.62)
+            shadowBlur: 0.35
+            shadowHorizontalOffset: Math.round(1.5 * card.uiScale)
+            shadowVerticalOffset: Math.round(1.5 * card.uiScale)
           }
 
-          Canvas {
-            id: analogDial
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(20 * card.uiScale)
-            height: width
-            antialiasing: true
-            property date timeValue: xmbClockBox.now
-            onTimeValueChanged: requestPaint()
-            onWidthChanged: requestPaint()
+          Row {
+            id: clockRow
+            spacing: Math.round(9 * card.uiScale)
 
-            onPaint: {
-              var ctx = getContext("2d")
-              ctx.clearRect(0, 0, width, height)
-              var cx = width / 2
-              var cy = height / 2
-              var r = width * 0.42
-              var lw = Math.max(1.2, width * 0.085)
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
+              color: "white"
+              font.family: card.xmbFontFamily
+              font.pixelSize: Math.round(16 * card.uiScale)
+              font.weight: Font.Normal
+            }
 
-              ctx.strokeStyle = "rgba(255, 255, 255, 0.92)"
-              ctx.lineWidth = lw
-              ctx.beginPath()
-              ctx.arc(cx, cy, r, 0, Math.PI * 2)
-              ctx.stroke()
+            Canvas {
+              id: analogDial
+              anchors.verticalCenter: parent.verticalCenter
+              width: Math.round(21 * card.uiScale)
+              height: width
+              antialiasing: true
+              property date timeValue: xmbClockBox.now
+              onTimeValueChanged: requestPaint()
+              onWidthChanged: requestPaint()
 
-              var mins = timeValue.getMinutes()
-              var hrs = (timeValue.getHours() % 12) + mins / 60.0
-              var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
-              var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
+              onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                var cx = width / 2
+                var cy = height / 2
+                var r = width * 0.41
+                var ringW = Math.max(1.8, width * 0.13)
+                var handW = Math.max(1.6, width * 0.115)
 
-              ctx.lineCap = "round"
-              ctx.beginPath()
-              ctx.moveTo(cx, cy)
-              ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
-              ctx.stroke()
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.98)"
+                ctx.lineWidth = ringW
+                ctx.beginPath()
+                ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                ctx.stroke()
 
-              ctx.beginPath()
-              ctx.moveTo(cx, cy)
-              ctx.lineTo(cx + Math.cos(minAngle) * r * 0.78, cy + Math.sin(minAngle) * r * 0.78)
-              ctx.stroke()
+                var mins = timeValue.getMinutes()
+                var hrs = (timeValue.getHours() % 12) + mins / 60.0
+                var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
+                var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
+
+                ctx.lineWidth = handW
+                ctx.lineCap = "round"
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.50, cy + Math.sin(hourAngle) * r * 0.50)
+                ctx.stroke()
+
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.lineTo(cx + Math.cos(minAngle) * r * 0.74, cy + Math.sin(minAngle) * r * 0.74)
+                ctx.stroke()
+              }
             }
           }
         }
