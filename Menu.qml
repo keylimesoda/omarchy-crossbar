@@ -474,7 +474,7 @@ Item {
             text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
             color: "white"
             font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(22 * card.hdScale)
+            font.pixelSize: Math.round(25 * card.hdScale)
             font.weight: Font.Normal
             style: Text.Raised
             styleColor: Qt.rgba(0, 0, 0, 0.55)
@@ -483,8 +483,8 @@ Item {
           Item {
             id: busyClockIcon
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(30 * card.hdScale)
-            height: Math.round(30 * card.hdScale)
+            width: Math.round(32 * card.hdScale)
+            height: Math.round(32 * card.hdScale)
 
             Canvas {
               id: analogDial
@@ -548,14 +548,14 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: Math.max(80, panel.height * 0.13)
-        height: Math.max(132, panel.height * 0.14)
+        anchors.topMargin: Math.round(108 * card.hdScale)
+        height: Math.round(134 * card.hdScale)
         clip: false
         visible: !root.dmenuActive
         opacity: card.inSubmenu ? 0.30 : 1.0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        readonly property real delegateWidth: Math.max(110, panel.width * 0.088)
-        readonly property real categoryStep: Math.max(136, panel.width * 0.098)
+        readonly property real delegateWidth: Math.round(170 * card.hdScale)
+        readonly property real categoryStep: Math.round(192 * card.hdScale)
         // Leave room for earlier categories on the left. All delegates move
         // around this point, so the selected category never depends on a
         // Flickable's viewport or on whether a delegate is instantiated.
@@ -585,8 +585,8 @@ Item {
               + (index - root.categoryIndex) * categoryList.categoryStep
               - width / 2
             z: selected ? 2 : 1
-            scale: selected ? 1.14 : 0.84
-            opacity: selected ? 1.0 : (distance === 1 ? 0.56 : 0.38)
+            scale: selected ? 1.16 : 0.86
+            opacity: selected ? 1.0 : (distance === 1 ? 0.62 : 0.42)
             visible: x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
 
@@ -599,9 +599,9 @@ Item {
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: parent.top
               text: category.icon
-              color: Qt.rgba(1, 1, 1, category.selected ? 0.78 : 0.62)
+              color: Qt.rgba(1, 1, 1, category.selected ? 0.86 : 0.68)
               font.family: category.iconFont.length ? category.iconFont : card.xmbFontFamily
-              font.pixelSize: Math.max(52, panel.height * 0.068)
+              font.pixelSize: Math.round(88 * card.hdScale)
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.45)
             }
@@ -609,14 +609,14 @@ Item {
             Text {
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: categoryIcon.bottom
-              anchors.topMargin: Math.max(8, panel.height * 0.008)
+              anchors.topMargin: Math.round(-6 * card.hdScale)
               text: category.label
               color: "white"
               opacity: category.selected ? 1.0 : 0.0
               Behavior on opacity { NumberAnimation { duration: 150 } }
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.max(15, Math.round(13.5 * card.uiScale))
-              font.weight: Font.Light
+              font.pixelSize: Math.round(21 * card.hdScale)
+              font.weight: Font.Normal
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.55)
             }
@@ -684,11 +684,11 @@ Item {
       Row {
         id: submenuBreadcrumb
         visible: card.inSubmenu
-        opacity: card.inSubmenu ? 0.52 : 0.0
-        x: Math.max(0, card.categoryAnchorCenterX - Math.round(52 * card.uiScale))
-        y: categoryList.y + categoryList.height + Math.round(46 * card.uiScale)
-        height: Math.round(72 * card.uiScale)
-        spacing: Math.round(8 * card.uiScale)
+        opacity: card.inSubmenu ? 0.56 : 0.0
+        x: Math.max(0, card.categoryAnchorCenterX - Math.round(84 * card.hdScale))
+        y: categoryList.y + categoryList.height + Math.round(48 * card.hdScale)
+        height: Math.round(132 * card.hdScale)
+        spacing: Math.round(12 * card.hdScale)
         Behavior on opacity { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
 
         Text {
@@ -696,7 +696,7 @@ Item {
           text: (card.submenuParentItem && card.submenuParentItem.icon) || "•"
           color: "white"
           font.family: (card.submenuParentItem && card.submenuParentItem.iconFont) || card.xmbFontFamily
-          font.pixelSize: Math.round(28 * card.uiScale)
+          font.pixelSize: Math.round(52 * card.hdScale)
           style: Text.Raised
           styleColor: Qt.rgba(0, 0, 0, 0.5)
         }
@@ -706,7 +706,7 @@ Item {
           text: "▸"
           color: Qt.rgba(1, 1, 1, 0.72)
           font.family: card.xmbFontFamily
-          font.pixelSize: Math.round(15 * card.uiScale)
+          font.pixelSize: Math.round(24 * card.hdScale)
           style: Text.Raised
           styleColor: Qt.rgba(0, 0, 0, 0.5)
         }
@@ -720,7 +720,7 @@ Item {
 
       Column {
         anchors.left: parent.left
-        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(27 * card.uiScale) + (card.inSubmenu ? Math.round(52 * card.uiScale) : 0))
+        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(66 * card.hdScale) + (card.inSubmenu ? Math.round(86 * card.hdScale) : 0))
         Behavior on anchors.leftMargin { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -772,7 +772,7 @@ Item {
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
               readonly property int rowDist: Math.abs(index - root.selectedIndex)
-              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(46 * card.uiScale)
+              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(48 * card.hdScale)
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
               // the original label verbatim when the row is selected.
@@ -784,15 +784,15 @@ Item {
               readonly property string subtitleText: displayDetail.length > 0
                 ? displayDetail
                 : (childCount > 0 ? (childCount + (childCount === 1 ? " Item" : " Items")) : "")
-              readonly property real selectedHeight: root.dmenuActive ? Math.round(128 * card.uiScale) : Math.round(72 * card.uiScale)
-              readonly property real rowStep: root.dmenuActive ? Math.round(76 * card.uiScale) : Math.round(52 * card.uiScale)
-              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.20, 0.68 - rowDist * 0.12)
+              readonly property real selectedHeight: root.dmenuActive ? Math.round(176 * card.hdScale) : Math.round(132 * card.hdScale)
+              readonly property real rowStep: root.dmenuActive ? Math.round(104 * card.hdScale) : Math.round(80 * card.hdScale)
+              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.32, 0.78 - rowDist * 0.10)
               readonly property real rowCenterY: y + height * 0.5
               readonly property real barFade: (!root.dmenuActive && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
               width: xmbResultList.width
-              height: selected ? selectedHeight : (root.dmenuActive ? Math.round(68 * card.uiScale) : Math.round(48 * card.uiScale))
+              height: selected ? selectedHeight : (root.dmenuActive ? Math.round(92 * card.hdScale) : Math.round(72 * card.hdScale))
               y: index < root.selectedIndex
-                ? categoryList.y - Math.round(12 * card.uiScale) - (root.selectedIndex - index) * rowStep
+                ? categoryList.y - Math.round(14 * card.hdScale) - (root.selectedIndex - index) * rowStep
                 : (index === root.selectedIndex
                   ? selectedY
                   : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
@@ -804,9 +804,9 @@ Item {
               Image {
                 id: xmbAppImage
                 visible: xmbRow.kind === "app"
-                width: xmbRow.selected ? Math.round(54 * card.uiScale) : Math.round(28 * card.uiScale)
+                width: xmbRow.selected ? Math.round(116 * card.hdScale) : Math.round(56 * card.hdScale)
                 height: width
-                anchors.left: parent.left
+                anchors.horizontalCenter: xmbRowIcon.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 fillMode: Image.PreserveAspectFit
                 sourceSize.width: width * Screen.devicePixelRatio
@@ -821,7 +821,7 @@ Item {
                 visible: xmbRow.selected && xmbRow.kind !== "app"
                 autoPaddingEnabled: true
                 blurEnabled: true
-                blur: 0.65
+                blur: 0.70
                 blurMax: 24
                 colorization: 1.0
                 colorizationColor: "#ffffff"
@@ -831,15 +831,15 @@ Item {
               Text {
                 id: xmbRowIcon
                 visible: xmbRow.kind !== "app"
-                width: xmbRow.selected ? Math.round(60 * card.uiScale) : Math.round(38 * card.uiScale)
+                width: Math.round(132 * card.hdScale)
                 height: parent.height
                 anchors.left: parent.left
                 text: xmbRow.icon || "•"
-                color: Qt.rgba(1, 1, 1, xmbRow.selected ? 0.88 : 0.76)
+                color: Qt.rgba(1, 1, 1, xmbRow.selected ? 0.94 : 0.80)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 font.family: xmbRow.iconFont.length ? xmbRow.iconFont : card.xmbFontFamily
-                font.pixelSize: xmbRow.selected ? Math.round(44 * card.uiScale) : Math.round(23 * card.uiScale)
+                font.pixelSize: xmbRow.selected ? Math.round(108 * card.hdScale) : Math.round(54 * card.hdScale)
                 style: xmbRow.selected ? Text.Normal : Text.Raised
                 styleColor: Qt.rgba(0, 0, 0, 0.45)
                 Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
@@ -847,10 +847,10 @@ Item {
 
               Column {
                 anchors.left: parent.left
-                anchors.leftMargin: xmbRow.selected ? Math.round(76 * card.uiScale) : Math.round(52 * card.uiScale)
+                anchors.leftMargin: xmbRow.selected ? Math.round(142 * card.hdScale) : Math.round(118 * card.hdScale)
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 1
+                spacing: Math.round(2 * card.hdScale)
 
                 Item {
                   width: parent.width
@@ -864,7 +864,7 @@ Item {
                     visible: xmbRow.selected
                     autoPaddingEnabled: true
                     blurEnabled: true
-                    blur: 0.65
+                    blur: 0.72
                     blurMax: 24
                     colorization: 1.0
                     colorizationColor: "#ffffff"
@@ -877,8 +877,8 @@ Item {
                     text: xmbRow.displayLabel
                     color: "white"
                     font.family: card.xmbFontFamily
-                    font.pixelSize: xmbRow.selected ? Math.round(21.5 * card.uiScale) : Math.round(14.5 * card.uiScale)
-                    font.weight: xmbRow.selected ? Font.Normal : Font.Light
+                    font.pixelSize: xmbRow.selected ? Math.round(35 * card.hdScale) : Math.round(24 * card.hdScale)
+                    font.weight: xmbRow.selected ? Font.Medium : Font.Normal
                     style: xmbRow.selected ? Text.Normal : Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
                     elide: Text.ElideRight
@@ -890,9 +890,9 @@ Item {
                   width: parent.width
                   visible: (xmbRow.selected && xmbRow.subtitleText.length > 0) || ((root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0)
                   text: (root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0 ? xmbRow.displayDetail : xmbRow.subtitleText
-                  color: xmbRow.selected ? Qt.rgba(1, 1, 1, 0.80) : Qt.rgba(1, 1, 1, 0.55)
+                  color: xmbRow.selected ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.62)
                   font.family: card.xmbFontFamily
-                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(16 * card.uiScale) : Math.round(13 * card.uiScale)) : Math.round(11.5 * card.uiScale)
+                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(22 * card.hdScale) : Math.round(18 * card.hdScale)) : Math.round(20 * card.hdScale)
                   font.weight: Font.Light
                   style: Text.Raised
                   styleColor: Qt.rgba(0, 0, 0, 0.55)
