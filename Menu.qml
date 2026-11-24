@@ -749,21 +749,21 @@ Item {
                     visible: xmbRow.selected
                     blurEnabled: true
                     blur: 1.0
-                    blurMax: Math.round(34 * card.uiScale)
-                    brightness: 0.35
-                    opacity: 0.72 + 0.28 * card.glowPulse
+                    blurMax: Math.round(32 * card.uiScale)
+                    brightness: 0.55
+                    opacity: 0.78 + 0.22 * card.glowPulse
                   }
 
-                  // Tight bright inner bloom (gives the crisp PS3 luminous text halo)
+                  // Tight bright inner bloom (authentic PS3 luminous white glyph halo)
                   MultiEffect {
                     source: xmbRowLabel
                     anchors.fill: xmbRowLabel
                     visible: xmbRow.selected
                     blurEnabled: true
-                    blur: 0.85
-                    blurMax: Math.round(12 * card.uiScale)
-                    brightness: 0.45
-                    opacity: 0.90 + 0.10 * card.glowPulse
+                    blur: 0.92
+                    blurMax: Math.round(14 * card.uiScale)
+                    brightness: 0.80
+                    opacity: 0.95 + 0.05 * card.glowPulse
                   }
 
                   Text {
@@ -773,7 +773,7 @@ Item {
                     color: "white"
                     font.family: card.xmbFontFamily
                     font.pixelSize: xmbRow.selected ? Math.round(18 * card.uiScale) : Math.round(14 * card.uiScale)
-                    font.weight: Font.Light
+                    font.weight: xmbRow.selected ? Font.Normal : Font.Light
                     style: Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
                     elide: Text.ElideRight
