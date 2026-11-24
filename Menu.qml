@@ -23,21 +23,47 @@ Item {
   property real waveTargetY: 0
   property real waveVelX: 0
   property real waveVelY: 0
+  property real waveVelXDot: 0
+  property real waveVelYDot: 0
+  property real particleParallaxX: 0
+  property real particleParallaxY: 0
 
   Timer {
     interval: 16
     repeat: true
-    running: panel.visible && (Math.abs(root.waveVelX) > 0.0005 || Math.abs(root.waveVelY) > 0.0005 || Math.abs(root.waveTargetX) > 0.0005 || Math.abs(root.waveTargetY) > 0.0005)
+    running: panel.visible && (
+      Math.abs(root.waveVelX) > 0.0002 || Math.abs(root.waveVelY) > 0.0002 ||
+      Math.abs(root.waveVelXDot) > 0.0005 || Math.abs(root.waveVelYDot) > 0.0005 ||
+      Math.abs(root.waveTargetX) > 0.0002 || Math.abs(root.waveTargetY) > 0.0002 ||
+      Math.abs(root.particleParallaxY) > 0.0005
+    )
     onTriggered: {
-      // Second-order smooth attack + gentle exponential decay (no 1-frame snap)
-      root.waveVelX += (root.waveTargetX - root.waveVelX) * 0.16
-      root.waveVelY += (root.waveTargetY - root.waveVelY) * 0.16
-      root.waveTargetX *= 0.88
-      root.waveTargetY *= 0.88
-      if (Math.abs(root.waveTargetX) <= 0.0005) root.waveTargetX = 0
-      if (Math.abs(root.waveTargetY) <= 0.0005) root.waveTargetY = 0
-      if (Math.abs(root.waveVelX) <= 0.0005 && root.waveTargetX === 0) root.waveVelX = 0
-      if (Math.abs(root.waveVelY) <= 0.0005 && root.waveTargetY === 0) root.waveVelY = 0
+      // Critically damped 2nd-order spring (K=64, D=16 -> C1 smooth acceleration & settle)
+      var dt = 0.016
+      var K = 64.0
+      var D = 16.0
+      var ax = K * (root.waveTargetX - root.waveVelX) - D * root.waveVelXDot
+      var ay = K * (root.waveTargetY - root.waveVelY) - D * root.waveVelYDot
+      root.waveVelXDot += ax * dt
+      root.waveVelYDot += ay * dt
+      root.waveVelX += root.waveVelXDot * dt
+      root.waveVelY += root.waveVelYDot * dt
+      root.waveTargetX *= 0.90
+      root.waveTargetY *= 0.90
+
+      // Smoothly integrate horizontal parallax (persists) and vertical parallax (gently recenters)
+      root.particleParallaxX += root.waveVelX * dt * 3.2
+      root.particleParallaxY = root.particleParallaxY * 0.95 + root.waveVelY * dt * 2.0
+
+      if (Math.abs(root.waveTargetX) <= 0.0002) root.waveTargetX = 0
+      if (Math.abs(root.waveTargetY) <= 0.0002) root.waveTargetY = 0
+      if (root.waveTargetX === 0 && Math.abs(root.waveVelX) <= 0.0002 && Math.abs(root.waveVelXDot) <= 0.0005) {
+        root.waveVelX = 0; root.waveVelXDot = 0
+      }
+      if (root.waveTargetY === 0 && Math.abs(root.waveVelY) <= 0.0002 && Math.abs(root.waveVelYDot) <= 0.0005) {
+        root.waveVelY = 0; root.waveVelYDot = 0
+      }
+      if (root.waveVelY === 0 && Math.abs(root.particleParallaxY) <= 0.0005) root.particleParallaxY = 0
     }
   }
 
@@ -163,14 +189,15 @@ Item {
         }
       }
 
-      // RPCS3 draw-36 3D eye-space particle cloud (perspective bokeh + diffraction glints).
+      // RPCS3 draw-36 3D eye-space particle cloud (hover-around-home + 3D nav parallax).
       ShaderEffect {
         anchors.fill: parent
         blending: true
         property var cloudTex: xmbCloudTex
         property vector2d resolution: Qt.vector2d(width, height)
         property real time: xmbBackground.time
-        property real waveVelX: root.waveVelX
+        property real parallaxX: root.particleParallaxX
+        property real parallaxY: root.particleParallaxY
         fragmentShader: "shaders/ps3_particles.frag.qsb"
       }
     }

@@ -99,8 +99,9 @@ void main() {
     vec3 staticNrm = texture(normalMap, nrmUV).rgb * 2.0 - 1.0;
     vNrm = normalize(staticNrm + vec3(-deltaSlope.y, deltaSlope.x, 0.0) * 0.55);
 
-    // Apply gentle navigation reactivity swell + vertical fit
-    ndc.y += impulseDy(ndc.x) * 0.14;
+    // Apply smooth 2nd-order navigation swell & subtle horizontal silk glide
+    ndc.y += impulseDy(ndc.x) * 0.16;
+    ndc.x -= pc.waveVelX * 0.12 * (0.6 + 0.4 * (1.0 - abs(qt_MultiTexCoord0.y * 2.0 - 1.0)));
     ndc.y *= pc.scaleY;
     vUV = qt_MultiTexCoord0;
 

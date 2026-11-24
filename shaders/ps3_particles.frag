@@ -1,6 +1,6 @@
 /* Firmware-extracted 3D eye-space PS3 dust motes (RPCS3 draw 36).
- * Projects 192 3D points from particle_cloud.png as tiny, crisp, slowly
- * drifting round PS3 sparkles (no artificial crosses or oversized bokeh).
+ * Motes hover organically around their 3D eye-space homes hugging the wave
+ * and respond to navigation with smooth, depth-scaled 3D parallax.
  */
 
 #version 440
@@ -13,7 +13,8 @@ layout(std140, binding = 0) uniform buf {
     float qt_Opacity;
     vec2 resolution;
     float time;
-    float waveVelX;
+    float parallaxX;
+    float parallaxY;
 } pc;
 
 layout(binding = 1) uniform sampler2D cloudTex;
@@ -44,18 +45,23 @@ void main() {
 
         float h0 = hash11(fi * 1.37 + 11.0);
         float h1 = hash11(fi * 2.91 + 37.0);
-
-        // Slow, hypnotic, independent 3D drift (no keypress snap)
-        float driftX = mod(eye.x + t * (0.018 + h0 * 0.024) + 7.73, 13.24) - 7.73;
-        float driftY = eye.y + sin(t * (0.18 + h1 * 0.22) + fi * 1.7) * 0.08;
         float depth = max(2.4, -eye.z);
+        float depthFactor = clamp(4.8 / depth, 0.65, 1.35);
+
+        // Organic hover around 3D eye-space home + gentle depth-scaled nav parallax
+        float wanderX = sin(t * (0.14 + h0 * 0.18) + fi * 2.3) * 0.28
+                      + cos(t * (0.09 + h1 * 0.11) + fi * 0.7) * 0.16;
+        float wanderY = sin(t * (0.18 + h1 * 0.22) + fi * 1.7) * 0.10
+                      + cos(t * (0.11 + h0 * 0.13) + fi * 3.1) * 0.06;
+
+        float px = mod(eye.x + wanderX - pc.parallaxX * depthFactor + 7.73, 13.24) - 7.73;
+        float py = eye.y * 0.78 + wanderY + pc.parallaxY * depthFactor * 0.45;
 
         // Perspective projection matching PS3 camera FOV
-        vec2 ndc = vec2(driftX / (depth * 0.58 * aspect), driftY / (depth * 0.58));
+        vec2 ndc = vec2(px / (depth * 0.58 * aspect), py / (depth * 0.58));
         vec2 centerPx = vec2((ndc.x * 0.5 + 0.5) * res.x, (0.5 - ndc.y * 0.5) * res.y);
 
-        // Tiny, crisp PS3 dust motes (~1.2px to 3.0px at 1080p, scaled gently by depth)
-        float depthFactor = clamp(4.8 / depth, 0.65, 1.35);
+        // Tiny, crisp PS3 dust motes (~1.1px to 3.1px at 1080p, gently depth-scaled)
         float radiusPx = max(1.1, (1.1 + pow(h1, 3.0) * 2.0) * depthFactor * pxScale);
 
         vec2 coord = (fragPx - centerPx) / radiusPx;
