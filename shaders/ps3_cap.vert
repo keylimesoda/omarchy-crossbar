@@ -70,7 +70,7 @@ float impulseDy(float xN) {
 }
 
 void main() {
-    vec2 gridCoord = floor(qt_MultiTexCoord0 * 127.0 + 0.5);
+    vec2 gridCoord = clamp(qt_MultiTexCoord0 * 127.0, vec2(0.0), vec2(127.0));
 
     float p = mod(pc.framePhase, 64.0);
     int i0 = int(floor(p));
@@ -83,21 +83,11 @@ void main() {
 
     vec2 ndc = sampleCubic(im1, i0, i1, i2, t, t2, t3, gridCoord);
 
-    // Smoothly interpolated per-frame normal perturbation (no integer-keyframe pop/blink)
-    vec2 ndcRight = mix(sampleFrame(i0, gridCoord + vec2(1.0, 0.0)),
-                        sampleFrame(i1, gridCoord + vec2(1.0, 0.0)), t);
-    vec2 ndcDown  = mix(sampleFrame(i0, gridCoord + vec2(0.0, 1.0)),
-                        sampleFrame(i1, gridCoord + vec2(0.0, 1.0)), t);
-    vec2 basePos  = sampleFrame(0,  gridCoord);
-    vec2 baseR    = sampleFrame(0,  gridCoord + vec2(1.0, 0.0));
-    vec2 baseD    = sampleFrame(0,  gridCoord + vec2(0.0, 1.0));
-
-    vec2 deltaSlope = ((ndcRight - ndc) - (baseR - basePos)) * 18.0
-                    + ((ndcDown  - ndc) - (baseD - basePos)) * 18.0;
-
+    // Lightweight smooth per-frame normal perturbation (halves vertex texture fetches)
     vec2 nrmUV = (gridCoord + 0.5) / 128.0;
     vec3 staticNrm = texture(normalMap, nrmUV).rgb * 2.0 - 1.0;
-    vNrm = normalize(staticNrm + vec3(-deltaSlope.y, deltaSlope.x, 0.0) * 0.55);
+    vec2 velDelta = sampleFrame(i1, gridCoord) - sampleFrame(i0, gridCoord);
+    vNrm = normalize(staticNrm + vec3(-velDelta.y, velDelta.x, 0.0) * 3.5);
 
     // Apply smooth 2nd-order navigation swell, horizontal glide, and PS3 vertical placement
     ndc.y += impulseDy(ndc.x) * 0.16;

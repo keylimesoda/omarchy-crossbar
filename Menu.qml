@@ -103,14 +103,16 @@ Item {
     Image { id: xmbNoiseTex;    source: "shaders/noise.png";          visible: false; smooth: true;  mipmap: false }
     Image { id: xmbCloudTex;    source: "shaders/particle_cloud.png"; visible: false; smooth: false; mipmap: false }
 
-    // Offscreen 4x MSAA scene: sky + PS3 SPU cloth + 3D eye-space particle cloud.
+    // Offscreen 4x MSAA scene rendered at 0.5x resolution (e.g. 1080p on 4K = 4x lower fillrate;
+    // menu text/icons/clock stay native 4K on top). Disabled when menu is hidden.
     Item {
       id: xmbRawScene
       anchors.fill: parent
       visible: false
-      layer.enabled: true
+      layer.enabled: panel.visible
       layer.samples: 4
       layer.smooth: true
+      layer.textureSize: Qt.size(Math.max(1, Math.round(width * 0.5)), Math.max(1, Math.round(height * 0.5)))
 
       ShaderEffect {
         id: xmbBackground
@@ -130,12 +132,11 @@ Item {
         }
       }
 
-      // Companion PS3 SPU cloth strip (incommensurate 113s period for multi-pass
-      // lines.qrc depth and non-repeating ~2.5-hour interference motion).
+      // Companion PS3 SPU cloth strip (incommensurate 113s period, lightweight 64x40 mesh).
       ShaderEffect {
         anchors.fill: parent
         blending: true
-        mesh: GridMesh { resolution: Qt.size(127, 127) }
+        mesh: GridMesh { resolution: Qt.size(64, 40) }
         property var atlas: xmbWaveAtlas
         property var normalMap: xmbWaveNormals
         property var fresLut: xmbFresLut
@@ -159,13 +160,12 @@ Item {
         }
       }
 
-      // Primary PS3 SPU cloth ribbon: dynamic per-frame normals, chromatic Fresnel
-      // LUT, baked RSX noise.png lace, and nav-reactive impulse swells.
+      // Primary PS3 SPU cloth ribbon (96x64 mesh = 2.7x fewer vertices, smooth via Catmull-Rom + MSAA).
       ShaderEffect {
         id: xmbCapturedWave
         anchors.fill: parent
         blending: true
-        mesh: GridMesh { resolution: Qt.size(127, 127) }
+        mesh: GridMesh { resolution: Qt.size(96, 64) }
         property var atlas: xmbWaveAtlas
         property var normalMap: xmbWaveNormals
         property var fresLut: xmbFresLut
@@ -194,7 +194,7 @@ Item {
         anchors.fill: parent
         blending: true
         property var cloudTex: xmbCloudTex
-        property vector2d resolution: Qt.vector2d(width, height)
+        property vector2d resolution: Qt.vector2d(Math.max(1, Math.round(width * 0.5)), Math.max(1, Math.round(height * 0.5)))
         property real time: xmbBackground.time
         property real parallaxX: root.particleParallaxX
         property real parallaxY: root.particleParallaxY
@@ -202,7 +202,7 @@ Item {
       }
     }
 
-    // Multi-pass HDR glare bloom layer (autoPaddingEnabled: false prevents edge borders).
+    // Quarter-res HDR glare bloom layer (~16x cheaper than full-4K blur, disabled when hidden).
     MultiEffect {
       id: xmbBloomLayer
       source: xmbRawScene
@@ -210,10 +210,11 @@ Item {
       visible: false
       blurEnabled: true
       blur: 1.0
-      blurMax: 48
+      blurMax: 24
       autoPaddingEnabled: false
-      layer.enabled: true
+      layer.enabled: panel.visible
       layer.smooth: true
+      layer.textureSize: Qt.size(Math.max(1, Math.round(width * 0.25)), Math.max(1, Math.round(height * 0.25)))
     }
 
     // Final FS_COMPOSITE filmic tone-map + glare blend + anti-banding dither.

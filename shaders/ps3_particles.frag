@@ -68,8 +68,14 @@ float facetReflectance(vec3 eyePos, float t, float h0, float h1, float id) {
 }
 
 // Dense tumbling-flake micro-glitter layer at a given focal depth
-vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float scale, float layerDepth,
+vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float bandY, float scale, float layerDepth,
                 float densityThreshold, float bandSigma, float pxScale, float seedOff) {
+    // Early vertical band reject before any hashing/trig (~70% of screen skipped in 3 ops)
+    float dy = screenUV.y - bandY;
+    float asymSigma = (dy < 0.0) ? (bandSigma * 0.42) : (bandSigma * 1.25);
+    float bandMask = exp(-(dy * dy) / (asymSigma * asymSigma));
+    if (bandMask < 0.02) return vec3(0.0);
+
     float depthFactor = clamp(FOCUS_Z / layerDepth, 0.70, 1.40);
     vec2 drift = vec2(-0.010, -0.003) * pc.time + vec2(pc.parallaxX * 0.14, -pc.parallaxY * 0.08) * depthFactor;
     vec2 p = aspectUV * scale + drift + vec2(seedOff * 19.3, seedOff * 11.7);
@@ -100,13 +106,6 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float scale, float layerDepth,
     vec2 pos = (vec2(h0, h1) - 0.5) * 0.68
              + vec2(sin(pc.time * (0.25 + h0 * 0.35) + spawnId * 25.0),
                     cos(pc.time * (0.22 + h1 * 0.30) + spawnId * 19.0)) * 0.10;
-
-    // Asymmetric wave-band envelope: cuts off cleanly above the crest, trails softly below
-    float bandY = 0.485 - 0.048 * sin((screenUV.x - 0.14) * 2.5);
-    float dy = screenUV.y - bandY;
-    float asymSigma = (dy < 0.0) ? (bandSigma * 0.42) : (bandSigma * 1.25);
-    float bandMask = exp(-(dy * dy) / (asymSigma * asymSigma));
-    if (bandMask < 0.02) return vec3(0.0);
 
     // Physical Depth of Field: defocus enlarges radius AND dims intensity (energy conservation)
     float defocus = abs(layerDepth - FOCUS_Z) / 2.2;
@@ -141,19 +140,22 @@ void main() {
     float t = pc.time;
 
     vec3 accum = vec3(0.0);
+    float bandY = 0.485 - 0.048 * sin((uv.x - 0.14) * 2.5);
 
     // 4 in-focus crisp tumbling-flake layers tightly carpeting the ribbon (depth ~5.5-6.1)
-    accum += flakeLayer(aspectUV, uv, 34.0, 5.80, 0.42, 0.085, pxScale, 1.0);
-    accum += flakeLayer(aspectUV, uv, 48.0, 5.65, 0.46, 0.070, pxScale, 2.0);
-    accum += flakeLayer(aspectUV, uv, 64.0, 5.95, 0.50, 0.065, pxScale, 3.0);
-    accum += flakeLayer(aspectUV, uv, 82.0, 5.75, 0.54, 0.095, pxScale, 4.0);
+    accum += flakeLayer(aspectUV, uv, bandY, 34.0, 5.80, 0.42, 0.085, pxScale, 1.0);
+    accum += flakeLayer(aspectUV, uv, bandY, 48.0, 5.65, 0.46, 0.070, pxScale, 2.0);
+    accum += flakeLayer(aspectUV, uv, bandY, 64.0, 5.95, 0.50, 0.065, pxScale, 3.0);
+    accum += flakeLayer(aspectUV, uv, bandY, 82.0, 5.75, 0.54, 0.095, pxScale, 4.0);
     // 2 slightly defocused mid-depth layers (softer, wider stragglers around the wave)
-    accum += flakeLayer(aspectUV, uv, 24.0, 4.70, 0.68, 0.180, pxScale, 5.0);
-    accum += flakeLayer(aspectUV, uv, 19.0, 7.10, 0.72, 0.220, pxScale, 6.0);
+    accum += flakeLayer(aspectUV, uv, bandY, 24.0, 4.70, 0.68, 0.180, pxScale, 5.0);
+    accum += flakeLayer(aspectUV, uv, bandY, 19.0, 7.10, 0.72, 0.220, pxScale, 6.0);
 
-    // 40 3D RPCS3 draw-36 particles with exact DoF (near/far = soft dim bokeh, mid = sharp glint)
-    for (int i = 0; i < 40; ++i) {
-        float fi = float(i) * 4.5;
+    // Skip 3D foreground orb loop entirely in top sky / bottom void
+    if (uv.y > 0.14 && uv.y < 0.86) {
+        // 24 3D RPCS3 draw-36 particles with exact DoF (near/far = soft dim bokeh, mid = sharp glint)
+        for (int i = 0; i < 24; ++i) {
+            float fi = float(i) * 7.5;
         vec3 raw = texture(cloudTex, vec2((fi + 0.5) / 192.0, 0.5)).rgb;
         vec3 eye = MIN_EYE + raw * RANGE_EYE;
 
@@ -194,6 +196,7 @@ void main() {
             float edgeBoost = smoothstep(0.55, 0.95, abs(ndc.x));
             vec3 pCol = mix(metallicTint(h1, edgeBoost), vec3(1.0), clamp(brightness * 0.4, 0.0, 1.0));
             accum += pCol * brightness;
+        }
         }
     }
 
