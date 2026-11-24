@@ -283,7 +283,7 @@ Item {
       anchors.fill: parent
       anchors.leftMargin: Math.max(48, panel.width * 0.065)
       anchors.rightMargin: Math.max(48, panel.width * 0.065)
-      anchors.topMargin: Math.max(70, panel.height * 0.12)
+      anchors.topMargin: 0
       anchors.bottomMargin: 0
       readonly property real categoryAnchorCenterX: categoryList.selectedCenterX
       opacity: 0.0
@@ -487,6 +487,7 @@ Item {
       Text {
         anchors.right: parent.right
         anchors.top: parent.top
+        anchors.topMargin: Math.round(74 * card.hdScale)
         visible: !!(root.filterText && root.mode !== "input")
         text: "Search: " + root.filterText
         color: "white"
@@ -505,7 +506,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: -card.anchors.rightMargin
         anchors.top: parent.top
-        anchors.topMargin: Math.round(74 * card.hdScale) - card.anchors.topMargin
+        anchors.topMargin: Math.round(74 * card.hdScale)
         visible: !(root.filterText && root.mode !== "input")
         width: Math.round(592 * card.hdScale)
         height: Math.round(59 * card.hdScale)
@@ -617,7 +618,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: Math.round(108 * card.hdScale)
+        anchors.topMargin: Math.round(238 * card.hdScale)
         height: Math.round(134 * card.hdScale)
         clip: false
         visible: !root.dmenuActive
@@ -855,6 +856,7 @@ Item {
               readonly property real baseOpacity: selected ? 1.0 : Math.max(0.0, 0.78 - rowDist * 0.12)
               readonly property real rowCenterY: y + height * 0.5
               readonly property real barFade: (!root.dmenuActive && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
+              readonly property real topFade: Math.min(1.0, Math.max(0.0, y / Math.round(64 * card.hdScale)))
               readonly property real bottomFade: Math.min(1.0, Math.max(0.0, (xmbResultList.height - (y + height)) / Math.round(90 * card.hdScale)))
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(92 * card.hdScale) : Math.round(72 * card.hdScale))
@@ -864,7 +866,7 @@ Item {
                   ? selectedY
                   : selectedY + selectedHeight + Math.round(42 * card.hdScale) + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
-              opacity: baseOpacity * barFade * bottomFade
+              opacity: baseOpacity * barFade * topFade * bottomFade
               Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
               Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
