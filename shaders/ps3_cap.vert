@@ -83,9 +83,11 @@ void main() {
 
     vec2 ndc = sampleCubic(im1, i0, i1, i2, t, t2, t3, gridCoord);
 
-    // Dynamic per-frame normal perturbation from live neighboring vertices
-    vec2 ndcRight = sampleFrame(i0, gridCoord + vec2(1.0, 0.0));
-    vec2 ndcDown  = sampleFrame(i0, gridCoord + vec2(0.0, 1.0));
+    // Smoothly interpolated per-frame normal perturbation (no integer-keyframe pop/blink)
+    vec2 ndcRight = mix(sampleFrame(i0, gridCoord + vec2(1.0, 0.0)),
+                        sampleFrame(i1, gridCoord + vec2(1.0, 0.0)), t);
+    vec2 ndcDown  = mix(sampleFrame(i0, gridCoord + vec2(0.0, 1.0)),
+                        sampleFrame(i1, gridCoord + vec2(0.0, 1.0)), t);
     vec2 basePos  = sampleFrame(0,  gridCoord);
     vec2 baseR    = sampleFrame(0,  gridCoord + vec2(1.0, 0.0));
     vec2 baseD    = sampleFrame(0,  gridCoord + vec2(0.0, 1.0));
