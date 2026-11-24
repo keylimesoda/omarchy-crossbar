@@ -23,7 +23,7 @@ Item {
   property bool useNativeBackend: true
   property string nativeBackendBin: "/home/ric/Modern-XMB/build/modern_xmb"
   property string nativeBackendQrc: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc"
-  property real nativeBackendOpacity: 0.86
+  property real nativeBackendOpacity: 0.99
   property real waveTargetX: 0
 
   Process {
@@ -826,12 +826,13 @@ Item {
 
               MultiEffect {
                 source: xmbRowIcon
-                anchors.fill: xmbRowIcon
+                anchors.centerIn: xmbRowIcon
                 visible: xmbRow.selected && xmbRow.kind !== "app"
+                autoPaddingEnabled: true
                 blurEnabled: true
-                blur: 0.50 + 0.45 * card.glowPulse
-                blurMax: Math.round(22 * card.uiScale)
-                opacity: 0.18 + 0.62 * card.glowPulse
+                blur: 0.45 + 0.45 * card.glowPulse
+                blurMax: 28
+                opacity: 0.22 + 0.58 * card.glowPulse
               }
 
               Text {
@@ -862,36 +863,19 @@ Item {
                   width: parent.width
                   height: xmbRowLabel.implicitHeight
 
-                  // Tighter single-pass-friendly bloom radii prevent 8-bit concentric alpha
-                  // quantization rings when composited on a transparent Wayland layer.
+                  // Single-pass auto-padded bloom (no brightness boost, blurMax <= 32)
+                  // avoids bounding-box clipping, rectangular halos, and mipmap rings.
                   MultiEffect {
                     source: xmbRowLabel
-                    width: xmbRowLabel.width
-                    height: xmbRowLabel.height
                     anchors.centerIn: xmbRowLabel
-                    anchors.horizontalCenterOffset: card.glowDriftX * 0.6
-                    anchors.verticalCenterOffset: card.glowDriftY * 0.6
+                    anchors.horizontalCenterOffset: card.glowDriftX * 0.35
+                    anchors.verticalCenterOffset: card.glowDriftY * 0.35
                     visible: xmbRow.selected
+                    autoPaddingEnabled: true
                     blurEnabled: true
-                    blur: 0.60 + 0.35 * card.glowPulse
-                    blurMax: Math.round(16 * card.uiScale)
-                    brightness: 0.45
-                    opacity: 0.28 + 0.48 * card.glowPulse
-                  }
-
-                  MultiEffect {
-                    source: xmbRowLabel
-                    width: xmbRowLabel.width
-                    height: xmbRowLabel.height
-                    anchors.centerIn: xmbRowLabel
-                    anchors.horizontalCenterOffset: -card.glowDriftX * 0.25
-                    anchors.verticalCenterOffset: card.glowDriftY * 0.25
-                    visible: xmbRow.selected
-                    blurEnabled: true
-                    blur: 0.50 + 0.40 * card.glowPulse
-                    blurMax: Math.round(8 * card.uiScale)
-                    brightness: 0.70
-                    opacity: 0.35 + 0.55 * card.glowPulse
+                    blur: 0.45 + 0.40 * card.glowPulse
+                    blurMax: 24
+                    opacity: 0.32 + 0.52 * card.glowPulse
                   }
 
                   Text {
