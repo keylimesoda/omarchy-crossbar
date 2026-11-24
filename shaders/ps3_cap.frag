@@ -32,6 +32,11 @@ float strandBand(float phase, float power) {
     return mix(0.35, pow(s, power), aa);
 }
 
+// Mirror-repeat UV so CLAMP_TO_EDGE textures never produce a 1-texel wrap seam
+vec2 mirrorUV(vec2 uv) {
+    return abs(fract(uv * 0.5) * 2.0 - 1.0);
+}
+
 void main() {
     vec3 N = normalize(vNrm);
 
@@ -57,21 +62,22 @@ void main() {
     vec3 silkCol = clamp(chromaticFres * 0.667 * 1.8 + vec3(spec0 * 0.34), vec3(0.0), vec3(1.0));
     vec3 litCol = vec3(0.107345) + silkCol;
 
-    // Baked RSX noise.png modulating lacy longitudinal silk filaments
-    vec2 nUV1 = fract(vec2(vUV.x * 2.6 + pc.framePhase * 0.008, vUV.y * 4.2));
-    vec2 nUV2 = fract(vec2(vUV.x * 5.2 - pc.framePhase * 0.014, vUV.y * 9.5));
+    // Baked RSX noise.png sampled with mirror-repeat (zero wrap seams)
+    vec2 nUV1 = mirrorUV(vec2(vUV.x * 2.6 + pc.framePhase * 0.008, vUV.y * 4.2));
+    vec2 nUV2 = mirrorUV(vec2(vUV.x * 5.2 - pc.framePhase * 0.014, vUV.y * 9.5));
     float n1 = texture(noiseTex, nUV1).r;
     float n2 = texture(noiseTex, nUV2).r;
 
     float warp = (n1 - 0.5) * 3.8;
-    float s1 = strandBand(vUV.y * 74.0  + warp * 1.4, 4.5);
-    float s2 = strandBand(vUV.y * 160.0 - warp * 2.0 + vUV.x * 2.5, 6.5);
-    float s3 = strandBand(vUV.y * 295.0 + warp * 2.6 - vUV.x * 4.0, 8.5);
-    float lace = (0.32 + 0.34 * s1 + 0.30 * s2 + 0.24 * s3) * (0.72 + 0.44 * n2);
+    float s1 = strandBand(vUV.y * 74.0  + warp * 1.4, 4.0);
+    float s2 = strandBand(vUV.y * 160.0 - warp * 2.0 + vUV.x * 2.5, 5.5);
+    float s3 = strandBand(vUV.y * 295.0 + warp * 2.6 - vUV.x * 4.0, 6.5);
+    float lace = (0.34 + 0.34 * s1 + 0.28 * s2 + 0.22 * s3) * (0.74 + 0.42 * n2);
 
-    float edge = smoothstep(0.0, 0.08, vUV.y) * smoothstep(0.0, 0.08, 1.0 - vUV.y)
-               * smoothstep(0.0, 0.04, vUV.x) * smoothstep(0.0, 0.04, 1.0 - vUV.x);
-    vec3 rgb = pc.tint.rgb * litCol * (pc.alpha * edge * lace * 1.75);
+    // Wide, buttery edge feathering (eliminates hard ribbon boundary lines)
+    float edge = smoothstep(0.0, 0.24, vUV.y) * smoothstep(0.0, 0.24, 1.0 - vUV.y)
+               * smoothstep(0.0, 0.06, vUV.x) * smoothstep(0.0, 0.06, 1.0 - vUV.x);
+    vec3 rgb = pc.tint.rgb * litCol * (pc.alpha * edge * lace * 1.95);
 
     // Output at 0.5x HDR scale (pure additive alpha = 0.0) so overlapping folds accumulate into HDR
     fragColor = vec4(clamp(rgb * 0.5, vec3(0.0), vec3(1.0)) * pc.qt_Opacity, 0.0);
