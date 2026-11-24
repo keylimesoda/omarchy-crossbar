@@ -587,8 +587,8 @@ Item {
             visible: x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
 
-            Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+            Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
             Behavior on opacity { NumberAnimation { duration: 180 } }
 
             Text {
@@ -795,7 +795,7 @@ Item {
                   : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
               opacity: baseOpacity * barFade
-              Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
+              Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
               Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
               Image {
