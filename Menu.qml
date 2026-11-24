@@ -260,7 +260,7 @@ Item {
       anchors.leftMargin: Math.max(48, panel.width * 0.065)
       anchors.rightMargin: Math.max(48, panel.width * 0.065)
       anchors.topMargin: Math.max(70, panel.height * 0.12)
-      anchors.bottomMargin: Math.max(48, panel.height * 0.08)
+      anchors.bottomMargin: 0
       readonly property real categoryAnchorCenterX: categoryList.selectedCenterX
 
       MouseArea { anchors.fill: parent; onClicked: {} }
@@ -609,7 +609,7 @@ Item {
             Text {
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: categoryIcon.bottom
-              anchors.topMargin: Math.round(-6 * card.hdScale)
+              anchors.topMargin: Math.round(-14 * card.hdScale)
               text: category.label
               color: "white"
               opacity: category.selected ? 1.0 : 0.0
@@ -720,7 +720,7 @@ Item {
 
       Column {
         anchors.left: parent.left
-        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(66 * card.hdScale) + (card.inSubmenu ? Math.round(86 * card.hdScale) : 0))
+        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(72 * card.hdScale) + (card.inSubmenu ? Math.round(86 * card.hdScale) : 0))
         Behavior on anchors.leftMargin { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -786,9 +786,10 @@ Item {
                 : (childCount > 0 ? (childCount + (childCount === 1 ? " Item" : " Items")) : "")
               readonly property real selectedHeight: root.dmenuActive ? Math.round(176 * card.hdScale) : Math.round(132 * card.hdScale)
               readonly property real rowStep: root.dmenuActive ? Math.round(104 * card.hdScale) : Math.round(80 * card.hdScale)
-              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.32, 0.78 - rowDist * 0.10)
+              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.0, 0.78 - rowDist * 0.12)
               readonly property real rowCenterY: y + height * 0.5
               readonly property real barFade: (!root.dmenuActive && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
+              readonly property real bottomFade: Math.min(1.0, Math.max(0.0, (xmbResultList.height - (y + height)) / Math.round(90 * card.hdScale)))
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(92 * card.hdScale) : Math.round(72 * card.hdScale))
               y: index < root.selectedIndex
@@ -797,7 +798,7 @@ Item {
                   ? selectedY
                   : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
-              opacity: baseOpacity * barFade
+              opacity: baseOpacity * barFade * bottomFade
               Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
               Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
@@ -831,7 +832,7 @@ Item {
               Text {
                 id: xmbRowIcon
                 visible: xmbRow.kind !== "app"
-                width: Math.round(132 * card.hdScale)
+                width: Math.round(144 * card.hdScale)
                 height: parent.height
                 anchors.left: parent.left
                 text: xmbRow.icon || "•"
@@ -847,7 +848,7 @@ Item {
 
               Column {
                 anchors.left: parent.left
-                anchors.leftMargin: xmbRow.selected ? Math.round(142 * card.hdScale) : Math.round(118 * card.hdScale)
+                anchors.leftMargin: xmbRow.selected ? Math.round(162 * card.hdScale) : Math.round(126 * card.hdScale)
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Math.round(2 * card.hdScale)
