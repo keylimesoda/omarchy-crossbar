@@ -377,6 +377,8 @@ Item {
 
       readonly property real uiScale: Math.max(1.0, panel.height / 1080) * 1.38
       readonly property string xmbFontFamily: root.fontFamily
+      readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
+      readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
       property real glowPulse: 0.45
 
       SequentialAnimation on glowPulse {
@@ -550,6 +552,8 @@ Item {
         height: Math.max(132, panel.height * 0.14)
         clip: false
         visible: !root.dmenuActive
+        opacity: card.inSubmenu ? 0.30 : 1.0
+        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         readonly property real delegateWidth: Math.max(110, panel.width * 0.088)
         readonly property real categoryStep: Math.max(136, panel.width * 0.098)
         // Leave room for earlier categories on the left. All delegates move
@@ -608,6 +612,8 @@ Item {
               anchors.topMargin: Math.max(8, panel.height * 0.008)
               text: category.label
               color: "white"
+              opacity: category.selected ? 1.0 : 0.0
+              Behavior on opacity { NumberAnimation { duration: 150 } }
               font.family: card.xmbFontFamily
               font.pixelSize: Math.max(15, Math.round(13.5 * card.uiScale))
               font.weight: Font.Light
@@ -674,9 +680,48 @@ Item {
         }
       }
 
+      // PS3 submenu parent ghost + breadcrumb arrow (slides in when diving into a submenu)
+      Row {
+        id: submenuBreadcrumb
+        visible: card.inSubmenu
+        opacity: card.inSubmenu ? 0.52 : 0.0
+        x: Math.max(0, card.categoryAnchorCenterX - Math.round(52 * card.uiScale))
+        y: categoryList.y + categoryList.height + Math.round(46 * card.uiScale)
+        height: Math.round(72 * card.uiScale)
+        spacing: Math.round(8 * card.uiScale)
+        Behavior on opacity { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          text: (card.submenuParentItem && card.submenuParentItem.icon) || "•"
+          color: "white"
+          font.family: (card.submenuParentItem && card.submenuParentItem.iconFont) || card.xmbFontFamily
+          font.pixelSize: Math.round(28 * card.uiScale)
+          style: Text.Raised
+          styleColor: Qt.rgba(0, 0, 0, 0.5)
+        }
+
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          text: "▸"
+          color: Qt.rgba(1, 1, 1, 0.72)
+          font.family: card.xmbFontFamily
+          font.pixelSize: Math.round(15 * card.uiScale)
+          style: Text.Raised
+          styleColor: Qt.rgba(0, 0, 0, 0.5)
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.goBack()
+        }
+      }
+
       Column {
         anchors.left: parent.left
-        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(27 * card.uiScale))
+        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(27 * card.uiScale) + (card.inSubmenu ? Math.round(52 * card.uiScale) : 0))
+        Behavior on anchors.leftMargin { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: Math.min(root.dmenuActive
@@ -726,6 +771,7 @@ Item {
               required property int childCount
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
+              readonly property int rowDist: Math.abs(index - root.selectedIndex)
               readonly property real selectedY: categoryList.y + categoryList.height + Math.round(46 * card.uiScale)
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
@@ -735,8 +781,13 @@ Item {
                 ? label.slice(0, descriptionSeparator).trim() : label
               readonly property string displayDetail: descriptionSeparator >= 0
                 ? label.slice(descriptionSeparator + 3).trim() + (detail ? " — " + detail : "") : detail
+              readonly property string subtitleText: displayDetail.length > 0
+                ? displayDetail
+                : (childCount > 0 ? (childCount + (childCount === 1 ? " Item" : " Items")) : "")
               readonly property real selectedHeight: root.dmenuActive ? Math.round(128 * card.uiScale) : Math.round(72 * card.uiScale)
               readonly property real rowStep: root.dmenuActive ? Math.round(76 * card.uiScale) : Math.round(52 * card.uiScale)
+              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.22, 0.66 - rowDist * 0.11)
+              readonly property real barFade: (!root.dmenuActive && y + height > categoryList.y - Math.round(8 * card.uiScale) && y < categoryList.y + categoryList.height + Math.round(8 * card.uiScale)) ? 0.18 : 1.0
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(68 * card.uiScale) : Math.round(48 * card.uiScale))
               y: index < root.selectedIndex
@@ -745,9 +796,9 @@ Item {
                   ? selectedY
                   : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
-              opacity: selected ? 1.0 : 0.48
+              opacity: baseOpacity * barFade
               Behavior on y { NumberAnimation { duration: 145; easing.type: Easing.OutCubic } }
-              Behavior on opacity { NumberAnimation { duration: 110 } }
+              Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
               Image {
                 id: xmbAppImage
@@ -842,12 +893,14 @@ Item {
 
                 Text {
                   width: parent.width
-                  visible: (root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0
-                  text: xmbRow.displayDetail
-                  color: Qt.rgba(1, 1, 1, 0.55)
+                  visible: (xmbRow.selected && xmbRow.subtitleText.length > 0) || ((root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0)
+                  text: (root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0 ? xmbRow.displayDetail : xmbRow.subtitleText
+                  color: xmbRow.selected ? Qt.rgba(1, 1, 1, 0.80) : Qt.rgba(1, 1, 1, 0.55)
                   font.family: card.xmbFontFamily
-                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(16 * card.uiScale) : Math.round(13 * card.uiScale)) : Math.round(12 * card.uiScale)
+                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(16 * card.uiScale) : Math.round(13 * card.uiScale)) : Math.round(11.5 * card.uiScale)
                   font.weight: Font.Light
+                  style: Text.Raised
+                  styleColor: Qt.rgba(0, 0, 0, 0.55)
                   wrapMode: root.dmenuActive && xmbRow.selected ? Text.WordWrap : Text.NoWrap
                   maximumLineCount: root.dmenuActive && xmbRow.selected ? 3 : 1
                   elide: Text.ElideRight

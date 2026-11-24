@@ -78,10 +78,13 @@ vec3 glitterLayer(vec2 aspectUV, vec2 screenUV, float scale, vec2 vel, float dep
     if (d > 1.0) return vec3(0.0);
 
     float d2 = d * d;
-    float core = exp(-d2 * 7.5) + exp(-d2 * 2.4) * 0.25;
-    float twinkle = pow(0.5 + 0.5 * sin(pc.time * (0.65 + h0 * 1.7) + id * 47.0), 2.6);
+    float core = exp(-d2 * 9.0) + exp(-d2 * 2.8) * 0.20;
+    // Dual-frequency sharp glittery scintillation (brief crisp diamond-dust flashes)
+    float s1 = 0.5 + 0.5 * sin(pc.time * (1.1 + h0 * 2.4) + id * 47.0);
+    float s2 = 0.5 + 0.5 * cos(pc.time * (0.65 + h1 * 1.8) - id * 31.0);
+    float glint = pow(s1 * s2, 3.2);
     float edgeBoost = smoothstep(0.55, 0.95, abs(screenUV.x * 2.0 - 1.0));
-    float intensity = core * (0.15 + 0.85 * twinkle) * bandMask * (0.55 + 0.75 * h0);
+    float intensity = core * (0.08 + 1.35 * glint) * bandMask * (0.55 + 0.75 * h0);
     return metallicTint(h1, edgeBoost) * intensity;
 }
 
@@ -122,15 +125,22 @@ void main() {
         vec2 ndc = vec2(px / (depth * 0.58 * aspect), py / (depth * 0.58));
         vec2 centerPx = vec2((ndc.x * 0.5 + 0.5) * res.x, (0.5 - ndc.y * 0.5) * res.y);
 
-        float radiusPx = max(1.8, (2.0 + pow(h1, 3.0) * 4.8) * depthFactor * pxScale);
+        float radiusPx = max(2.0, (2.4 + pow(h1, 2.8) * 5.6) * depthFactor * pxScale);
         vec2 coord = (fragPx - centerPx) / radiusPx;
         float d2 = dot(coord, coord);
         if (d2 < 1.0) {
-            float twinkle = pow(0.5 + 0.5 * sin(t * (0.55 + h0 * 1.2) + fi * 4.3), 2.0);
-            float orb = exp(-d2 * 5.5) + exp(-d2 * 1.9) * 0.32;
-            float brightness = orb * (0.20 + 0.80 * twinkle) * (0.45 + 0.65 * h0);
+            float d = sqrt(d2);
+            // True lens bokeh disc (flat soft circle + subtle bright aperture rim, not a pointy Gaussian)
+            float disc = smoothstep(1.0, 0.68, d);
+            float rim  = smoothstep(0.50, 0.84, d) * smoothstep(1.0, 0.82, d) * 0.42;
+            float orb  = disc * 0.52 + rim;
+            // Sharp dual-frequency glitter scintillation
+            float s1 = 0.5 + 0.5 * sin(t * (0.95 + h0 * 2.1) + fi * 4.3);
+            float s2 = 0.5 + 0.5 * cos(t * (0.55 + h1 * 1.5) - fi * 2.9);
+            float glint = pow(s1 * s2, 2.6);
+            float brightness = orb * (0.12 + 1.15 * glint) * (0.45 + 0.65 * h0);
             float edgeBoost = smoothstep(0.55, 0.95, abs(ndc.x));
-            vec3 pCol = mix(metallicTint(h1, edgeBoost), vec3(1.0), clamp(brightness * 0.55, 0.0, 1.0));
+            vec3 pCol = mix(metallicTint(h1, edgeBoost), vec3(1.0), clamp(brightness * 0.45, 0.0, 1.0));
             accum += pCol * brightness;
         }
     }
