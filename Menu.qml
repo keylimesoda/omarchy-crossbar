@@ -411,21 +411,21 @@ Item {
         width: Math.max(Math.round(panel.width * 0.30), Math.max(dateText.implicitWidth, timeRow.implicitWidth) * 2 + Math.round(48 * card.uiScale))
         height: Math.round(36 * card.uiScale)
 
-        // Subtle glass interior tint
+        // Ephemeral frosted-glass interior tint
         Rectangle {
           anchors.fill: parent
           radius: Math.round(4 * card.uiScale)
-          color: Qt.rgba(1, 1, 1, 0.04)
+          color: Qt.rgba(1, 1, 1, 0.025)
         }
 
-        // Uniform frosted-glass bloom hugging the rounded 1px border (no corner hotspots)
+        // Whisper-soft frosted-glass halo around the hairline border
         MultiEffect {
           source: clockFrame
           anchors.fill: clockFrame
           blurEnabled: true
-          blur: 0.75
-          blurMax: Math.round(10 * card.uiScale)
-          opacity: 0.65
+          blur: 0.70
+          blurMax: Math.round(9 * card.uiScale)
+          opacity: 0.32
         }
 
         Rectangle {
@@ -433,8 +433,8 @@ Item {
           anchors.fill: parent
           radius: Math.round(4 * card.uiScale)
           color: "transparent"
-          border.width: Math.max(1, Math.round(1.1 * card.uiScale))
-          border.color: Qt.rgba(1, 1, 1, 0.78)
+          border.width: Math.max(1, Math.round(0.55 * card.uiScale))
+          border.color: Qt.rgba(1, 1, 1, 0.42)
         }
 
         property date now: new Date()
@@ -461,7 +461,7 @@ Item {
             text: Qt.formatDateTime(xmbClockBox.now, "M/d")
             color: "white"
             font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(18.5 * card.uiScale)
+            font.pixelSize: Math.round(17 * card.uiScale)
             font.weight: Font.Normal
           }
 
@@ -478,14 +478,14 @@ Item {
               text: Qt.formatDateTime(xmbClockBox.now, "h:mm AP")
               color: "white"
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.round(18.5 * card.uiScale)
+              font.pixelSize: Math.round(17 * card.uiScale)
               font.weight: Font.Normal
             }
 
             Canvas {
               id: analogDial
               anchors.verticalCenter: parent.verticalCenter
-              width: Math.round(23.5 * card.uiScale)
+              width: Math.round(21.5 * card.uiScale)
               height: width
               antialiasing: true
               property date timeValue: xmbClockBox.now
@@ -609,7 +609,7 @@ Item {
               text: category.label
               color: "white"
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.max(18, Math.round(16 * card.uiScale))
+              font.pixelSize: Math.max(15, Math.round(13.5 * card.uiScale))
               font.weight: Font.Light
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.55)
@@ -752,7 +752,7 @@ Item {
               Image {
                 id: xmbAppImage
                 visible: xmbRow.kind === "app"
-                width: xmbRow.selected ? Math.round(44 * card.uiScale) : Math.round(28 * card.uiScale)
+                width: xmbRow.selected ? Math.round(54 * card.uiScale) : Math.round(28 * card.uiScale)
                 height: width
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
@@ -776,7 +776,7 @@ Item {
               Text {
                 id: xmbRowIcon
                 visible: xmbRow.kind !== "app"
-                width: xmbRow.selected ? Math.round(54 * card.uiScale) : Math.round(38 * card.uiScale)
+                width: xmbRow.selected ? Math.round(60 * card.uiScale) : Math.round(38 * card.uiScale)
                 height: parent.height
                 anchors.left: parent.left
                 text: xmbRow.icon || "•"
@@ -784,7 +784,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 font.family: xmbRow.iconFont.length ? xmbRow.iconFont : card.xmbFontFamily
-                font.pixelSize: xmbRow.selected ? Math.round(36 * card.uiScale) : Math.round(22 * card.uiScale)
+                font.pixelSize: xmbRow.selected ? Math.round(44 * card.uiScale) : Math.round(23 * card.uiScale)
                 style: Text.Raised
                 styleColor: Qt.rgba(0, 0, 0, 0.45)
                 Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
@@ -792,7 +792,7 @@ Item {
 
               Column {
                 anchors.left: parent.left
-                anchors.leftMargin: xmbRow.selected ? Math.round(70 * card.uiScale) : Math.round(50 * card.uiScale)
+                anchors.leftMargin: xmbRow.selected ? Math.round(76 * card.uiScale) : Math.round(52 * card.uiScale)
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 1
@@ -831,7 +831,7 @@ Item {
                     text: xmbRow.displayLabel
                     color: "white"
                     font.family: card.xmbFontFamily
-                    font.pixelSize: xmbRow.selected ? Math.round(20 * card.uiScale) : Math.round(15.5 * card.uiScale)
+                    font.pixelSize: xmbRow.selected ? Math.round(21.5 * card.uiScale) : Math.round(14.5 * card.uiScale)
                     font.weight: xmbRow.selected ? Font.Normal : Font.Light
                     style: Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
