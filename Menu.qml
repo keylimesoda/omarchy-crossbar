@@ -379,14 +379,14 @@ Item {
       readonly property string xmbFontFamily: root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
-      // Firmware-verified PS3 fo_lbl_alpha breathing throb (1500ms full cycle)
+      // Zen PS3 breathing throb (calm 2200ms cycle driving deep halo expansion + luminance)
       property real glowPulse: 0.5
 
       SequentialAnimation on glowPulse {
         loops: Animation.Infinite
         running: panel.visible
-        NumberAnimation { from: 0.0; to: 1.0; duration: 750; easing.type: Easing.InOutSine }
-        NumberAnimation { from: 1.0; to: 0.0; duration: 750; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 0.0; to: 1.0; duration: 1100; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 1.0; to: 0.0; duration: 1100; easing.type: Easing.InOutSine }
       }
 
       Text {
@@ -600,7 +600,7 @@ Item {
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: parent.top
               text: category.icon
-              color: Qt.rgba(1, 1, 1, category.selected ? 0.98 : 0.72)
+              color: Qt.rgba(1, 1, 1, category.selected ? 0.78 : 0.62)
               font.family: category.iconFont.length ? category.iconFont : card.xmbFontFamily
               font.pixelSize: Math.max(52, panel.height * 0.068)
               style: Text.Raised
@@ -787,12 +787,13 @@ Item {
                 : (childCount > 0 ? (childCount + (childCount === 1 ? " Item" : " Items")) : "")
               readonly property real selectedHeight: root.dmenuActive ? Math.round(128 * card.uiScale) : Math.round(72 * card.uiScale)
               readonly property real rowStep: root.dmenuActive ? Math.round(76 * card.uiScale) : Math.round(52 * card.uiScale)
-              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.22, 0.66 - rowDist * 0.11)
-              readonly property real barFade: (!root.dmenuActive && y + height > categoryList.y - Math.round(8 * card.uiScale) && y < categoryList.y + categoryList.height + Math.round(8 * card.uiScale)) ? 0.18 : 1.0
+              readonly property real baseOpacity: selected ? 1.0 : Math.max(0.20, 0.68 - rowDist * 0.12)
+              readonly property real rowCenterY: y + height * 0.5
+              readonly property real barFade: (!root.dmenuActive && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(68 * card.uiScale) : Math.round(48 * card.uiScale))
               y: index < root.selectedIndex
-                ? categoryList.y - (root.selectedIndex - index) * rowStep
+                ? categoryList.y - Math.round(12 * card.uiScale) - (root.selectedIndex - index) * rowStep
                 : (index === root.selectedIndex
                   ? selectedY
                   : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
@@ -820,9 +821,9 @@ Item {
                 anchors.fill: xmbRowIcon
                 visible: xmbRow.selected && xmbRow.kind !== "app"
                 blurEnabled: true
-                blur: 0.85
-                blurMax: Math.round(20 * card.uiScale)
-                opacity: 0.34 + 0.36 * card.glowPulse
+                blur: 0.50 + 0.45 * card.glowPulse
+                blurMax: Math.round(22 * card.uiScale)
+                opacity: 0.18 + 0.62 * card.glowPulse
               }
 
               Text {
@@ -853,28 +854,28 @@ Item {
                   width: parent.width
                   height: xmbRowLabel.implicitHeight
 
-                  // Outer wide bloom (1500ms PS3 breathing throb)
+                  // Outer wide bloom (deep zen breathing expansion + luminance)
                   MultiEffect {
                     source: xmbRowLabel
                     anchors.fill: xmbRowLabel
                     visible: xmbRow.selected
                     blurEnabled: true
-                    blur: 1.0
-                    blurMax: Math.round(32 * card.uiScale)
+                    blur: 0.55 + 0.45 * card.glowPulse
+                    blurMax: Math.round(34 * card.uiScale)
                     brightness: 0.55
-                    opacity: 0.56 + 0.36 * card.glowPulse
+                    opacity: 0.18 + 0.74 * card.glowPulse
                   }
 
-                  // Tight bright inner bloom (1500ms PS3 luminous white glyph halo)
+                  // Tight bright inner bloom (expands & contracts smoothly with breath)
                   MultiEffect {
                     source: xmbRowLabel
                     anchors.fill: xmbRowLabel
                     visible: xmbRow.selected
                     blurEnabled: true
-                    blur: 0.92
-                    blurMax: Math.round(14 * card.uiScale)
+                    blur: 0.48 + 0.48 * card.glowPulse
+                    blurMax: Math.round(15 * card.uiScale)
                     brightness: 0.80
-                    opacity: 0.62 + 0.38 * card.glowPulse
+                    opacity: 0.25 + 0.75 * card.glowPulse
                   }
 
                   Text {
