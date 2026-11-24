@@ -461,15 +461,16 @@ Item {
           onTriggered: xmbClockBox.now = new Date()
         }
 
-        // Right-aligned date/time string + Sony analog clock icon (indi_adjust.x = -26 @ 1080p).
+        // Right-aligned date/time string + crisp 4K vector analog clock dial.
         Row {
           anchors.right: parent.right
-          anchors.rightMargin: Math.round(26 * card.hdScale)
+          anchors.rightMargin: Math.round(38 * card.hdScale)
           anchors.verticalCenter: parent.verticalCenter
           spacing: Math.round(14 * card.hdScale)
 
           Text {
             anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: Math.round(-1 * card.hdScale)
             text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
             color: "white"
             font.family: card.xmbFontFamily
@@ -482,42 +483,61 @@ Item {
           Item {
             id: busyClockIcon
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(36 * card.hdScale)
-            height: Math.round(36 * card.hdScale)
+            width: Math.round(34 * card.hdScale)
+            height: Math.round(34 * card.hdScale)
 
-            readonly property real mins: xmbClockBox.now.getMinutes()
-            readonly property real hrs: (xmbClockBox.now.getHours() % 12) + mins / 60.0
-
-            Image {
-              anchors.centerIn: parent
-              width: Math.round(46 * card.hdScale)
-              height: Math.round(46 * card.hdScale)
-              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy_shadow.png"
-              smooth: true
-            }
-
-            Image {
+            Canvas {
+              id: analogDial
               anchors.fill: parent
-              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy.png"
-              smooth: true
+              visible: false
+              antialiasing: true
+              property date timeValue: xmbClockBox.now
+              onTimeValueChanged: requestPaint()
+              onWidthChanged: requestPaint()
+
+              onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                var cx = width / 2
+                var cy = height / 2
+                var r = width * 0.42
+                var ringW = Math.max(1.8, width * 0.11)
+                var handW = Math.max(1.6, width * 0.095)
+
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.96)"
+                ctx.lineWidth = ringW
+                ctx.beginPath()
+                ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                ctx.stroke()
+
+                var mins = timeValue.getMinutes()
+                var hrs = (timeValue.getHours() % 12) + mins / 60.0
+                var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
+                var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
+
+                ctx.lineWidth = handW
+                ctx.lineCap = "round"
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
+                ctx.stroke()
+
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.lineTo(cx + Math.cos(minAngle) * r * 0.74, cy + Math.sin(minAngle) * r * 0.74)
+                ctx.stroke()
+              }
             }
 
-            Image {
-              anchors.centerIn: parent
-              width: Math.round(8 * card.hdScale)
-              height: Math.round(36 * card.hdScale)
-              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy_s.png"
-              rotation: busyClockIcon.hrs * 30.0
-              smooth: true
-            }
-
-            Image {
-              anchors.centerIn: parent
-              width: Math.round(8 * card.hdScale)
-              height: Math.round(36 * card.hdScale)
-              source: "file:///home/ric/Modern-XMB/assets/ui/tex_busy_l.png"
-              rotation: busyClockIcon.mins * 6.0
-              smooth: true
+            MultiEffect {
+              source: analogDial
+              anchors.fill: analogDial
+              autoPaddingEnabled: false
+              shadowEnabled: true
+              shadowColor: Qt.rgba(0, 0, 0, 0.55)
+              shadowBlur: 0.35
+              shadowHorizontalOffset: Math.round(1.5 * card.hdScale)
+              shadowVerticalOffset: Math.round(1.5 * card.hdScale)
             }
           }
         }
