@@ -379,15 +379,11 @@ Item {
       readonly property string xmbFontFamily: root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
-      // Zen PS3 breathing throb (calm 2200ms cycle driving deep halo expansion + luminance)
-      property real glowPulse: 0.5
-
-      SequentialAnimation on glowPulse {
-        loops: Animation.Infinite
-        running: panel.visible
-        NumberAnimation { from: 0.0; to: 1.0; duration: 1100; easing.type: Easing.InOutSine }
-        NumberAnimation { from: 1.0; to: 0.0; duration: 1100; easing.type: Easing.InOutSine }
-      }
+      // Phase-locked to the ribbon's clock (xmbBackground.time): slow ~5.5s zen breath
+      // plus a subtle living light drift that moves with the silk wave.
+      readonly property real glowPulse: 0.5 + 0.5 * Math.sin(xmbBackground.time * 1.15)
+      readonly property real glowDriftX: Math.sin(xmbBackground.time * 0.72) * 3.5 * uiScale
+      readonly property real glowDriftY: Math.cos(xmbBackground.time * 0.54) * 1.8 * uiScale
 
       Text {
         anchors.right: parent.right
@@ -854,10 +850,14 @@ Item {
                   width: parent.width
                   height: xmbRowLabel.implicitHeight
 
-                  // Outer wide bloom (deep zen breathing expansion + luminance)
+                  // Outer wide bloom (breathes & drifts smoothly with the silk ribbon)
                   MultiEffect {
                     source: xmbRowLabel
-                    anchors.fill: xmbRowLabel
+                    width: xmbRowLabel.width
+                    height: xmbRowLabel.height
+                    anchors.centerIn: xmbRowLabel
+                    anchors.horizontalCenterOffset: card.glowDriftX
+                    anchors.verticalCenterOffset: card.glowDriftY
                     visible: xmbRow.selected
                     blurEnabled: true
                     blur: 0.55 + 0.45 * card.glowPulse
@@ -866,10 +866,14 @@ Item {
                     opacity: 0.18 + 0.74 * card.glowPulse
                   }
 
-                  // Tight bright inner bloom (expands & contracts smoothly with breath)
+                  // Tight bright inner bloom (subtle counter-drift + slow breath)
                   MultiEffect {
                     source: xmbRowLabel
-                    anchors.fill: xmbRowLabel
+                    width: xmbRowLabel.width
+                    height: xmbRowLabel.height
+                    anchors.centerIn: xmbRowLabel
+                    anchors.horizontalCenterOffset: -card.glowDriftX * 0.35
+                    anchors.verticalCenterOffset: card.glowDriftY * 0.35
                     visible: xmbRow.selected
                     blurEnabled: true
                     blur: 0.48 + 0.48 * card.glowPulse
