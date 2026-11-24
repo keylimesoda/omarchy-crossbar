@@ -408,7 +408,7 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: -Math.round(panel.height * 0.05)
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.max(Math.round(panel.width * 0.30), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(72 * card.uiScale))
+        width: Math.max(Math.round(panel.width * 0.30), Math.max(dateText.implicitWidth, timeRow.implicitWidth) * 2 + Math.round(48 * card.uiScale))
         height: Math.round(36 * card.uiScale)
 
         // Subtle glass interior tint
@@ -446,90 +446,98 @@ Item {
           onTriggered: xmbClockBox.now = new Date()
         }
 
+        // Date is right-aligned to the bar's center split; time + dial are left-aligned to it.
         Item {
-          anchors.right: parent.right
-          anchors.rightMargin: Math.round(panel.width * 0.045)
-          anchors.verticalCenter: parent.verticalCenter
-          width: clockRow.implicitWidth + Math.round(16 * card.uiScale)
-          height: parent.height
+          id: clockSource
+          anchors.fill: parent
+          visible: false
 
-          Item {
-            id: clockSource
-            anchors.fill: parent
-            visible: false
+          Text {
+            id: dateText
+            anchors.right: parent.horizontalCenter
+            anchors.rightMargin: Math.round(5 * card.uiScale)
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: Math.round(1 * card.uiScale)
+            text: Qt.formatDateTime(xmbClockBox.now, "M/d")
+            color: "white"
+            font.family: card.xmbFontFamily
+            font.pixelSize: Math.round(18.5 * card.uiScale)
+            font.weight: Font.Normal
+          }
 
-            Row {
-              id: clockRow
-              anchors.centerIn: parent
-              spacing: Math.round(10 * card.uiScale)
+          Row {
+            id: timeRow
+            anchors.left: parent.horizontalCenter
+            anchors.leftMargin: Math.round(5 * card.uiScale)
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Math.round(10 * card.uiScale)
 
-              Text {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: Math.round(1 * card.uiScale)
-                text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
-                color: "white"
-                font.family: card.xmbFontFamily
-                font.pixelSize: Math.round(18.5 * card.uiScale)
-                font.weight: Font.Normal
-              }
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              anchors.verticalCenterOffset: Math.round(1 * card.uiScale)
+              text: Qt.formatDateTime(xmbClockBox.now, "h:mm AP")
+              color: "white"
+              font.family: card.xmbFontFamily
+              font.pixelSize: Math.round(18.5 * card.uiScale)
+              font.weight: Font.Normal
+            }
 
-              Canvas {
-                id: analogDial
-                anchors.verticalCenter: parent.verticalCenter
-                width: Math.round(23.5 * card.uiScale)
-                height: width
-                antialiasing: true
-                property date timeValue: xmbClockBox.now
-                onTimeValueChanged: requestPaint()
-                onWidthChanged: requestPaint()
+            Canvas {
+              id: analogDial
+              anchors.verticalCenter: parent.verticalCenter
+              width: Math.round(23.5 * card.uiScale)
+              height: width
+              antialiasing: true
+              property date timeValue: xmbClockBox.now
+              onTimeValueChanged: requestPaint()
+              onWidthChanged: requestPaint()
 
-                onPaint: {
-                  var ctx = getContext("2d")
-                  ctx.clearRect(0, 0, width, height)
-                  var cx = width / 2
-                  var cy = height / 2
-                  var r = width * 0.41
-                  var ringW = Math.max(1.6, width * 0.115)
-                  var handW = Math.max(1.5, width * 0.105)
+              onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                var cx = width / 2
+                var cy = height / 2
+                var r = width * 0.41
+                var ringW = Math.max(1.6, width * 0.115)
+                var handW = Math.max(1.5, width * 0.105)
 
-                  ctx.strokeStyle = "rgba(255, 255, 255, 0.98)"
-                  ctx.lineWidth = ringW
-                  ctx.beginPath()
-                  ctx.arc(cx, cy, r, 0, Math.PI * 2)
-                  ctx.stroke()
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.98)"
+                ctx.lineWidth = ringW
+                ctx.beginPath()
+                ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                ctx.stroke()
 
-                  var mins = timeValue.getMinutes()
-                  var hrs = (timeValue.getHours() % 12) + mins / 60.0
-                  var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
-                  var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
+                var mins = timeValue.getMinutes()
+                var hrs = (timeValue.getHours() % 12) + mins / 60.0
+                var hourAngle = (hrs / 12.0) * Math.PI * 2 - Math.PI / 2
+                var minAngle = (mins / 60.0) * Math.PI * 2 - Math.PI / 2
 
-                  ctx.lineWidth = handW
-                  ctx.lineCap = "round"
-                  ctx.beginPath()
-                  ctx.moveTo(cx, cy)
-                  ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
-                  ctx.stroke()
+                ctx.lineWidth = handW
+                ctx.lineCap = "round"
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
+                ctx.stroke()
 
-                  ctx.beginPath()
-                  ctx.moveTo(cx, cy)
-                  ctx.lineTo(cx + Math.cos(minAngle) * r * 0.76, cy + Math.sin(minAngle) * r * 0.76)
-                  ctx.stroke()
-                }
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.lineTo(cx + Math.cos(minAngle) * r * 0.76, cy + Math.sin(minAngle) * r * 0.76)
+                ctx.stroke()
               }
             }
           }
+        }
 
-          // Single crisp pass with autoPaddingEnabled: false so shadow never shifts alignment
-          MultiEffect {
-            source: clockSource
-            anchors.fill: clockSource
-            autoPaddingEnabled: false
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.65)
-            shadowBlur: 0.30
-            shadowHorizontalOffset: Math.round(1.5 * card.uiScale)
-            shadowVerticalOffset: Math.round(1.5 * card.uiScale)
-          }
+        // Single crisp pass with autoPaddingEnabled: false so shadow never shifts alignment
+        MultiEffect {
+          source: clockSource
+          anchors.fill: clockSource
+          autoPaddingEnabled: false
+          shadowEnabled: true
+          shadowColor: Qt.rgba(0, 0, 0, 0.65)
+          shadowBlur: 0.30
+          shadowHorizontalOffset: Math.round(1.5 * card.uiScale)
+          shadowVerticalOffset: Math.round(1.5 * card.uiScale)
         }
       }
 
