@@ -461,7 +461,7 @@ Item {
       }
       readonly property var submenuSnapshot: (root.submenuSnapshotStack.length > 0)
         ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
-        : (subT > 0.01 ? activeSubmenuSnapshot : null)
+        : (subT > 0.001 ? activeSubmenuSnapshot : null)
       // Single continuous firmware-verified submenu collapse factor (explore_plugin: 250 ms):
       // 0 = full Level-1 XMB, 1 = settled Level-2 (cat shifts -257px/-10px, parent -> 316,
       // siblings -> 455 around focal Y with ◀ chevron, children slide in from +250px right).
@@ -784,7 +784,7 @@ Item {
       Item {
         id: submenuBreadcrumbLayer
         anchors.fill: parent
-        visible: card.subT > 0.02 && card.submenuSnapshot !== null
+        visible: card.subT > 0.001 && card.submenuSnapshot !== null
         readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
         readonly property real l1RowStep: Math.round(80 * card.hdScale)
         readonly property real l1SelectedH: Math.round(132 * card.hdScale)
@@ -835,11 +835,11 @@ Item {
               visible: modelData.kind !== "app"
               anchors.centerIn: parent
               text: modelData.icon || "•"
-              color: "white"
+              color: Qt.rgba(1, 1, 1, isParentSel ? 0.94 : 0.80)
               font.family: (modelData.iconFont && modelData.iconFont.length) ? modelData.iconFont : card.xmbFontFamily
               font.pixelSize: Math.round((isParentSel ? (108 + (62 - 108) * card.subT) : (54 + (48 - 54) * card.subT)) * card.hdScale)
               style: Text.Raised
-              styleColor: Qt.rgba(0, 0, 0, 0.40)
+              styleColor: Qt.rgba(0, 0, 0, 0.35)
             }
 
             MouseArea {
@@ -969,7 +969,7 @@ Item {
 
               Image {
                 id: xmbAppImage
-                visible: xmbRow.kind === "app" && (card.inSubmenu || card.subT <= 0.02)
+                visible: xmbRow.kind === "app" && (card.inSubmenu || card.subT <= 0.001)
                 width: xmbRow.selected ? Math.round(116 * card.hdScale) : Math.round(56 * card.hdScale)
                 height: width
                 anchors.horizontalCenter: xmbRowIcon.horizontalCenter
@@ -983,7 +983,7 @@ Item {
 
               Text {
                 id: xmbRowIcon
-                visible: xmbRow.kind !== "app" && (card.inSubmenu || card.subT <= 0.02)
+                visible: xmbRow.kind !== "app" && (card.inSubmenu || card.subT <= 0.001)
                 width: Math.round(144 * card.hdScale)
                 height: parent.height
                 anchors.left: parent.left
