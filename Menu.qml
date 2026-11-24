@@ -379,13 +379,14 @@ Item {
       readonly property string xmbFontFamily: root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
-      property real glowPulse: 0.45
+      // Firmware-verified PS3 fo_lbl_alpha breathing throb (1500ms full cycle)
+      property real glowPulse: 0.5
 
       SequentialAnimation on glowPulse {
         loops: Animation.Infinite
         running: panel.visible
-        NumberAnimation { from: 0.32; to: 0.68; duration: 1800; easing.type: Easing.InOutSine }
-        NumberAnimation { from: 0.68; to: 0.32; duration: 1800; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 0.0; to: 1.0; duration: 750; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 1.0; to: 0.0; duration: 750; easing.type: Easing.InOutSine }
       }
 
       Text {
@@ -590,16 +591,16 @@ Item {
             visible: x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
 
-            Behavior on x { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
-            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+            Behavior on opacity { NumberAnimation { duration: 180 } }
 
             Text {
               id: categoryIcon
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.top: parent.top
               text: category.icon
-              color: Qt.rgba(1, 1, 1, category.selected ? 0.86 : 0.72)
+              color: Qt.rgba(1, 1, 1, category.selected ? 0.98 : 0.72)
               font.family: category.iconFont.length ? category.iconFont : card.xmbFontFamily
               font.pixelSize: Math.max(52, panel.height * 0.068)
               style: Text.Raised
@@ -721,7 +722,7 @@ Item {
       Column {
         anchors.left: parent.left
         anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(27 * card.uiScale) + (card.inSubmenu ? Math.round(52 * card.uiScale) : 0))
-        Behavior on anchors.leftMargin { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
+        Behavior on anchors.leftMargin { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: Math.min(root.dmenuActive
@@ -797,8 +798,8 @@ Item {
                   : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
               opacity: baseOpacity * barFade
-              Behavior on y { NumberAnimation { duration: 145; easing.type: Easing.OutCubic } }
-              Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+              Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
+              Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
               Image {
                 id: xmbAppImage
@@ -821,7 +822,7 @@ Item {
                 blurEnabled: true
                 blur: 0.85
                 blurMax: Math.round(20 * card.uiScale)
-                opacity: 0.45 + 0.25 * card.glowPulse
+                opacity: 0.34 + 0.36 * card.glowPulse
               }
 
               Text {
@@ -852,7 +853,7 @@ Item {
                   width: parent.width
                   height: xmbRowLabel.implicitHeight
 
-                  // Outer wide bloom
+                  // Outer wide bloom (1500ms PS3 breathing throb)
                   MultiEffect {
                     source: xmbRowLabel
                     anchors.fill: xmbRowLabel
@@ -861,10 +862,10 @@ Item {
                     blur: 1.0
                     blurMax: Math.round(32 * card.uiScale)
                     brightness: 0.55
-                    opacity: 0.78 + 0.22 * card.glowPulse
+                    opacity: 0.56 + 0.36 * card.glowPulse
                   }
 
-                  // Tight bright inner bloom (authentic PS3 luminous white glyph halo)
+                  // Tight bright inner bloom (1500ms PS3 luminous white glyph halo)
                   MultiEffect {
                     source: xmbRowLabel
                     anchors.fill: xmbRowLabel
@@ -873,7 +874,7 @@ Item {
                     blur: 0.92
                     blurMax: Math.round(14 * card.uiScale)
                     brightness: 0.80
-                    opacity: 0.95 + 0.05 * card.glowPulse
+                    opacity: 0.62 + 0.38 * card.glowPulse
                   }
 
                   Text {
