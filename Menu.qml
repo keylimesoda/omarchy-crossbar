@@ -32,6 +32,29 @@ Item {
     command: [root.nativeBackendBin, "--layer-shell", "--opacity", String(root.nativeBackendOpacity), root.nativeBackendQrc]
   }
 
+  // Zero-fork persistent UNIX datagram bridge for Modern-XMB's 32x16 particle flow-field wind.
+  Process {
+    id: nativeWindBridge
+    running: root.useNativeBackend && root.opened && root.rowsLoaded
+    stdinEnabled: true
+    command: ["python3", "-u", "-c",
+      "import os,socket,sys\n" +
+      "p=os.path.join(os.environ.get('XDG_RUNTIME_DIR','/tmp'),'modern-xmb-wind.sock')\n" +
+      "s=socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM)\n" +
+      "for line in sys.stdin:\n" +
+      "  msg=line.strip().encode()\n" +
+      "  if msg:\n" +
+      "    try: s.sendto(msg,p)\n" +
+      "    except OSError: pass\n"
+    ]
+  }
+
+  function sendNavWind(cmd) {
+    if (root.useNativeBackend && nativeWindBridge.running) {
+      nativeWindBridge.write(cmd + "\n")
+    }
+  }
+
   // Authentic PS3 system Latin fontset (vsh.elf PhFont::SetStyle opens only SCE-PS3-RD-R-LATIN.TTF,
   // tagged DemiBold 600 in OS/2; falls back to root.fontFamily if absent).
   FontLoader {
@@ -1403,6 +1426,7 @@ Item {
     if (nextIndex === root.categoryIndex) return
     root.categoryIndex = nextIndex
     root.waveTargetX = Math.max(-0.10, Math.min(0.10, root.waveTargetX + (delta > 0 ? 0.06 : -0.06)))
+    root.sendNavWind(delta > 0 ? "right" : "left")
     if (!root.filterText) root.previewCategory(false)
   }
 
@@ -1821,6 +1845,7 @@ Item {
       selectedIndex = ((selectedIndex + delta) % displayModel.count + displayModel.count) % displayModel.count
     }
     root.waveTargetY = Math.max(-0.08, Math.min(0.08, root.waveTargetY + (delta > 0 ? -0.045 : 0.045)))
+    root.sendNavWind(delta > 0 ? "down" : "up")
   }
 
   function setFilter(nextFilter) {
@@ -1858,6 +1883,7 @@ Item {
         selectedIndex: root.selectedIndex
       }])
       root.navStack = root.navStack.concat([root.activeMenu])
+      root.sendNavWind("right")
     }
     root.activeMenu = id
     root.syncCategoryToMenu()
@@ -1881,6 +1907,7 @@ Item {
       root.navStack = root.navStack.slice(0, root.navStack.length - 1)
       root.submenuSnapshotStack = root.submenuSnapshotStack.slice(0, Math.max(0, root.submenuSnapshotStack.length - 1))
       root.setActiveMenu(previous, false, false, prevSnap ? prevSnap.selectedIndex : 0)
+      root.sendNavWind("left")
       return true
     }
 
