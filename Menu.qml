@@ -20,19 +20,33 @@ Item {
   // `omarchy-shell shell summon omarchy.menu ...` and close() when hidden.
   property string pendingInitialMenu: "root"
   // Native Modern-XMB Vulkan + AVX-512 Wayland layer-shell underlay (set false to fall back to QML shaders)
+  property string xmbConfigPath: Quickshell.env("HOME") + "/.config/omarchy/xmb-menu.json"
   property bool useNativeBackend: true
   property string nativeBackendBin: "/home/ric/Modern-XMB/build/modern_xmb"
   property string nativeBackendQrc: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc"
+  property string xmbMonth: "auto"
+  property string xmbTime: "auto"
   property real nativeBackendOpacity: 0.99
+  property string xmbFontChoice: "rodin"
+  property bool xmbClock24h: false
+  property bool xmbPreviewActive: false
   property real waveTargetX: 0
 
   Process {
     id: nativeBgProcess
     running: root.useNativeBackend && root.opened && root.rowsLoaded
-    command: [root.nativeBackendBin, "--layer-shell", "--opacity", String(root.nativeBackendOpacity), root.nativeBackendQrc]
+    command: [
+      root.nativeBackendBin,
+      "--layer-shell",
+      "--month", String(root.xmbMonth),
+      "--time", String(root.xmbTime),
+      "--opacity", String(root.nativeBackendOpacity),
+      root.nativeBackendQrc
+    ]
   }
 
-  // Zero-fork persistent UNIX datagram bridge for Modern-XMB's 32x16 particle flow-field wind.
+  // Zero-fork persistent UNIX datagram bridge for Modern-XMB's 32x16 particle flow-field wind
+  // and live preview IPC (month / time / opacity / qrc).
   Process {
     id: nativeWindBridge
     running: root.useNativeBackend && root.opened && root.rowsLoaded
@@ -55,11 +69,116 @@ Item {
     }
   }
 
-  // Authentic PS3 system Latin fontset (vsh.elf PhFont::SetStyle opens only SCE-PS3-RD-R-LATIN.TTF,
-  // tagged DemiBold 600 in OS/2; falls back to root.fontFamily if absent).
+  FileView {
+    id: xmbSettingsFile
+    path: root.xmbConfigPath
+    watchChanges: false
+    printErrors: false
+    onLoaded: root.loadXmbSettings(text())
+  }
+
+  Process {
+    id: xmbSettingsSaveProc
+  }
+
+  function loadXmbSettings(rawText) {
+    try {
+      var cfg = JSON.parse(rawText || "{}")
+      if (typeof cfg.qrc === "string" && cfg.qrc.length > 0) root.nativeBackendQrc = cfg.qrc
+      if (typeof cfg.month === "string" && cfg.month.length > 0) root.xmbMonth = cfg.month
+      if (typeof cfg.time === "string" && cfg.time.length > 0) root.xmbTime = cfg.time
+      if (typeof cfg.opacity === "number" && cfg.opacity >= 0.05 && cfg.opacity <= 1.0) root.nativeBackendOpacity = cfg.opacity
+      if (typeof cfg.font === "string" && cfg.font.length > 0) root.xmbFontChoice = cfg.font
+      if (typeof cfg.clock24h === "boolean") root.xmbClock24h = cfg.clock24h
+      if (typeof cfg.useNativeBackend === "boolean") root.useNativeBackend = cfg.useNativeBackend
+      if (root.rowsLoaded) root.rebuildItemsFromSources()
+    } catch (e) {}
+  }
+
+  function saveXmbSettings() {
+    var payload = JSON.stringify({
+      qrc: root.nativeBackendQrc,
+      month: root.xmbMonth,
+      time: root.xmbTime,
+      opacity: root.nativeBackendOpacity,
+      font: root.xmbFontChoice,
+      clock24h: root.xmbClock24h,
+      useNativeBackend: root.useNativeBackend
+    }, null, 2) + "\n"
+    xmbSettingsSaveProc.command = [
+      "python3", "-c",
+      "import os,sys; p=sys.argv[1]; os.makedirs(os.path.dirname(p),exist_ok=True); t=p+'.tmp'; open(t,'w').write(sys.argv[2]); os.replace(t,p)",
+      root.xmbConfigPath, payload
+    ]
+    xmbSettingsSaveProc.running = true
+  }
+
+  function previewXmbAction(action) {
+    if (!action || action.indexOf("xmb:") !== 0) return
+    var parts = action.split(":")
+    if (parts.length < 3) return
+    var key = parts[1]
+    var val = parts.slice(2).join(":")
+    if (key === "qrc") { root.sendNavWind("qrc " + val); root.xmbPreviewActive = true }
+    else if (key === "month") { root.sendNavWind("month " + val); root.xmbPreviewActive = true }
+    else if (key === "time") { root.sendNavWind("time " + val); root.xmbPreviewActive = true }
+    else if (key === "opacity") { root.sendNavWind("opacity " + val); root.xmbPreviewActive = true }
+  }
+
+  function restoreXmbLiveState() {
+    if (!root.xmbPreviewActive) return
+    root.xmbPreviewActive = false
+    root.sendNavWind("qrc " + root.nativeBackendQrc)
+    root.sendNavWind("month " + root.xmbMonth)
+    root.sendNavWind("time " + root.xmbTime)
+    root.sendNavWind("opacity " + String(root.nativeBackendOpacity))
+  }
+
+  function applyXmbAction(action) {
+    var parts = action.split(":")
+    if (parts.length < 3) return
+    var key = parts[1]
+    var val = parts.slice(2).join(":")
+    root.xmbPreviewActive = false
+    if (key === "qrc") {
+      root.nativeBackendQrc = val
+      root.sendNavWind("qrc " + val)
+    } else if (key === "month") {
+      root.xmbMonth = val
+      root.sendNavWind("month " + val)
+    } else if (key === "time") {
+      root.xmbTime = val
+      root.sendNavWind("time " + val)
+    } else if (key === "opacity") {
+      var op = parseFloat(val)
+      if (!isNaN(op) && op >= 0.05 && op <= 1.0) {
+        root.nativeBackendOpacity = op
+        root.sendNavWind("opacity " + String(op))
+      }
+    } else if (key === "font") {
+      root.xmbFontChoice = val
+    } else if (key === "clock24h") {
+      root.xmbClock24h = (val === "true")
+    } else if (key === "renderer") {
+      root.useNativeBackend = (val === "native")
+    }
+    root.saveXmbSettings()
+    root.rebuildItemsFromSources()
+    root.goBack()
+  }
+
+  // Authentic PS3 system Latin fontsets (local OFW 4.76 extraction; falls back to root.fontFamily).
   FontLoader {
     id: ps3FontRegular
     source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-R-LATIN.TTF"
+  }
+  FontLoader {
+    id: ps3FontRounded
+    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-VR-R-LATIN.TTF"
+  }
+  FontLoader {
+    id: ps3FontPop
+    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-SR-R-LATIN.TTF"
   }
   property real waveTargetY: 0
   property real waveVelX: 0
@@ -467,9 +586,12 @@ Item {
 
       readonly property real hdScale: panel.height / 1080.0
       readonly property real uiScale: Math.max(1.0, panel.height / 1080) * 1.38
-      readonly property string xmbFontFamily: ps3FontRegular.status === FontLoader.Ready
-        ? ps3FontRegular.name
-        : root.fontFamily
+      readonly property string xmbFontFamily: {
+        if (root.xmbFontChoice === "system") return root.fontFamily
+        if (root.xmbFontChoice === "rounded" && ps3FontRounded.status === FontLoader.Ready) return ps3FontRounded.name
+        if (root.xmbFontChoice === "pop" && ps3FontPop.status === FontLoader.Ready) return ps3FontPop.name
+        return ps3FontRegular.status === FontLoader.Ready ? ps3FontRegular.name : root.fontFamily
+      }
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
       readonly property var submenuSnapshot: (inSubmenu && root.submenuSnapshotStack.length > 0)
@@ -591,7 +713,7 @@ Item {
           Text {
             id: clockText
             anchors.verticalCenter: parent.verticalCenter
-            text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
+            text: Qt.formatDateTime(xmbClockBox.now, root.xmbClock24h ? "M/d H:mm" : "M/d h:mm AP")
             color: "white"
             font.family: card.xmbFontFamily
             font.pixelSize: Math.round(26 * card.hdScale)
@@ -1378,11 +1500,135 @@ Item {
     return MenuModel.parseMenuJsonc(raw)
   }
 
+  function injectXmbSettingsMenu(mergedMenu) {
+    var items = mergedMenu.items
+    var order = mergedMenu.itemOrder
+    if (!items["appearance"]) return
+
+    function addEntry(id, entry) {
+      entry.id = id
+      if (!items[id]) order.push(id)
+      items[id] = entry
+    }
+
+    var qrcPresets = [
+      { id: "stock", label: "Stock OFW Lines", path: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc" },
+      { id: "dblue", label: "Deep Blue Day", path: "/home/ric/Modern-XMB/assets/qrc/dblue_day.qrc" },
+      { id: "black", label: "Midnight Black", path: "/home/ric/Modern-XMB/assets/qrc/black.qrc" },
+      { id: "pro4k", label: "PS3 4K Pro Lines", path: "/home/ric/Modern-XMB/assets/qrc/ps3_4k_pro_lines.qrc" }
+    ]
+    var curQrcLabel = "Custom"
+    for (var qi = 0; qi < qrcPresets.length; qi++) {
+      if (qrcPresets[qi].path === root.nativeBackendQrc) { curQrcLabel = qrcPresets[qi].label; break }
+    }
+
+    var months = [
+      { val: "auto", label: "Auto (System Month)" },
+      { val: "1", label: "January" }, { val: "2", label: "February" }, { val: "3", label: "March" },
+      { val: "4", label: "April" }, { val: "5", label: "May" }, { val: "6", label: "June" },
+      { val: "7", label: "July" }, { val: "8", label: "August" }, { val: "9", label: "September" },
+      { val: "10", label: "October" }, { val: "11", label: "November" }, { val: "12", label: "December" }
+    ]
+    var curMonthLabel = "Auto"
+    for (var mi = 0; mi < months.length; mi++) {
+      if (months[mi].val === root.xmbMonth) { curMonthLabel = months[mi].label; break }
+    }
+
+    var times = [
+      { val: "auto", label: "Auto (System Clock)" },
+      { val: "dawn", label: "Dawn" },
+      { val: "noon", label: "Noon" },
+      { val: "dusk", label: "Dusk" },
+      { val: "night", label: "Night" }
+    ]
+    var curTimeLabel = root.xmbTime
+    for (var ti = 0; ti < times.length; ti++) {
+      if (times[ti].val === root.xmbTime) { curTimeLabel = times[ti].label; break }
+    }
+
+    var opacities = [0.85, 0.92, 0.96, 0.99, 1.0]
+    var curOpacityLabel = Math.round(root.nativeBackendOpacity * 100) + "%"
+
+    var fonts = [
+      { val: "rodin", label: "PS3 Rodin (Default)" },
+      { val: "rounded", label: "PS3 Rounded" },
+      { val: "pop", label: "PS3 Pop" },
+      { val: "system", label: "Omarchy System Font" }
+    ]
+    var curFontLabel = "PS3 Rodin"
+    for (var fi = 0; fi < fonts.length; fi++) {
+      if (fonts[fi].val === root.xmbFontChoice) { curFontLabel = fonts[fi].label; break }
+    }
+
+    addEntry("appearance.xmb", { parent: "appearance", kind: "menu", icon: "󰔎", label: "XMB Menu", detail: curQrcLabel })
+
+    addEntry("appearance.xmb.qrc", { parent: "appearance.xmb", kind: "menu", icon: "󰸉", label: "Theme / Wave", detail: curQrcLabel })
+    for (var q = 0; q < qrcPresets.length; q++) {
+      var qp = qrcPresets[q]
+      addEntry("appearance.xmb.qrc." + qp.id, {
+        parent: "appearance.xmb.qrc", kind: "action", icon: "󰸉",
+        label: (qp.path === root.nativeBackendQrc ? "✓ " : "") + qp.label,
+        action: "xmb:qrc:" + qp.path
+      })
+    }
+
+    addEntry("appearance.xmb.month", { parent: "appearance.xmb", kind: "menu", icon: "󰃭", label: "Month / Color", detail: curMonthLabel })
+    for (var m = 0; m < months.length; m++) {
+      var mo = months[m]
+      addEntry("appearance.xmb.month." + mo.val, {
+        parent: "appearance.xmb.month", kind: "action", icon: "󰃭",
+        label: (mo.val === root.xmbMonth ? "✓ " : "") + mo.label,
+        action: "xmb:month:" + mo.val
+      })
+    }
+
+    addEntry("appearance.xmb.time", { parent: "appearance.xmb", kind: "menu", icon: "󰖨", label: "Time of Day", detail: curTimeLabel })
+    for (var t = 0; t < times.length; t++) {
+      var tm = times[t]
+      addEntry("appearance.xmb.time." + tm.val, {
+        parent: "appearance.xmb.time", kind: "action", icon: "󰖨",
+        label: (tm.val === root.xmbTime ? "✓ " : "") + tm.label,
+        action: "xmb:time:" + tm.val
+      })
+    }
+
+    addEntry("appearance.xmb.opacity", { parent: "appearance.xmb", kind: "menu", icon: "󰂵", label: "Background Opacity", detail: curOpacityLabel })
+    for (var o = 0; o < opacities.length; o++) {
+      var ov = opacities[o]
+      var pct = Math.round(ov * 100) + "%"
+      var isCurOp = Math.abs(ov - root.nativeBackendOpacity) < 0.005
+      addEntry("appearance.xmb.opacity." + Math.round(ov * 100), {
+        parent: "appearance.xmb.opacity", kind: "action", icon: "󰂵",
+        label: (isCurOp ? "✓ " : "") + pct,
+        action: "xmb:opacity:" + String(ov)
+      })
+    }
+
+    addEntry("appearance.xmb.font", { parent: "appearance.xmb", kind: "menu", icon: "󰛖", label: "Font", detail: curFontLabel })
+    for (var f = 0; f < fonts.length; f++) {
+      var fn = fonts[f]
+      addEntry("appearance.xmb.font." + fn.val, {
+        parent: "appearance.xmb.font", kind: "action", icon: "󰛖",
+        label: (fn.val === root.xmbFontChoice ? "✓ " : "") + fn.label,
+        action: "xmb:font:" + fn.val
+      })
+    }
+
+    addEntry("appearance.xmb.clock", { parent: "appearance.xmb", kind: "menu", icon: "󰥔", label: "Clock Format", detail: root.xmbClock24h ? "24-Hour" : "12-Hour" })
+    addEntry("appearance.xmb.clock.12", { parent: "appearance.xmb.clock", kind: "action", icon: "󰥔", label: (!root.xmbClock24h ? "✓ " : "") + "12-Hour (AM/PM)", action: "xmb:clock24h:false" })
+    addEntry("appearance.xmb.clock.24", { parent: "appearance.xmb.clock", kind: "action", icon: "󰥔", label: (root.xmbClock24h ? "✓ " : "") + "24-Hour", action: "xmb:clock24h:true" })
+
+    addEntry("appearance.xmb.renderer", { parent: "appearance.xmb", kind: "menu", icon: "󰍹", label: "Renderer", detail: root.useNativeBackend ? "Modern-XMB (Vulkan)" : "QML Shader Fallback" })
+    addEntry("appearance.xmb.renderer.native", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (root.useNativeBackend ? "✓ " : "") + "Modern-XMB (Vulkan)", action: "xmb:renderer:native" })
+    addEntry("appearance.xmb.renderer.qml", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (!root.useNativeBackend ? "✓ " : "") + "QML Shader Fallback", action: "xmb:renderer:qml" })
+  }
+
   // Merge defaults + user extension. Later entries override earlier ones
   // on a per-key basis (so the user can tweak label/icon/action without
   // re-declaring the whole row).
   function rebuildItemsFromSources() {
     var mergedMenu = MenuModel.mergeMenuSources(root.defaultMenuItems, root.userMenuItems)
+    root.injectXmbSettingsMenu(mergedMenu)
     root.providerRevision += 1
     root.providersLoaded = ({})
     root.providerQueue = []
@@ -1846,6 +2092,9 @@ Item {
     }
     root.waveTargetY = Math.max(-0.08, Math.min(0.08, root.waveTargetY + (delta > 0 ? -0.045 : 0.045)))
     root.sendNavWind(delta > 0 ? "down" : "up")
+    if (root.activeMenu.indexOf("appearance.xmb.") === 0 && root.selectedIndex >= 0 && root.selectedIndex < displayModel.count) {
+      root.previewXmbAction(displayModel.get(root.selectedIndex).action)
+    }
   }
 
   function setFilter(nextFilter) {
@@ -1892,12 +2141,21 @@ Item {
     root.cursorActive = true
     root.rebuildDisplay()
     if (root.selectedIndex >= displayModel.count) root.selectedIndex = Math.max(0, displayModel.count - 1)
+    if (id.indexOf("appearance.xmb.") === 0 && initialSelectedIndex === undefined) {
+      for (var ci = 0; ci < displayModel.count; ci++) {
+        if ((displayModel.get(ci).label || "").indexOf("✓ ") === 0) {
+          root.selectedIndex = ci
+          break
+        }
+      }
+    }
     root.invalidateVolatileProvider(id)
     root.loadProviderForMenu(id)
   }
 
   function goBack() {
     if (root.activeMenu === "root") return false
+    root.restoreXmbLiveState()
 
     if (root.navStack.length > 0) {
       var previous = root.navStack[root.navStack.length - 1]
@@ -1941,6 +2199,8 @@ Item {
       opened = false
       filterText = ""
       if (root.appLibrary) root.appLibrary.launch(appId, label)
+    } else if (row.action && row.action.indexOf("xmb:") === 0) {
+      root.applyXmbAction(row.action)
     } else {
       root.applySelected(row.itemId, row.action)
     }
