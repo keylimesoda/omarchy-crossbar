@@ -448,7 +448,7 @@ Item {
 
         Item {
           anchors.right: parent.right
-          anchors.rightMargin: card.anchors.rightMargin + Math.round(20 * card.uiScale)
+          anchors.rightMargin: Math.round(panel.width * 0.045)
           anchors.verticalCenter: parent.verticalCenter
           width: clockRow.implicitWidth + Math.round(16 * card.uiScale)
           height: parent.height
