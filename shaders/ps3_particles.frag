@@ -107,20 +107,20 @@ vec3 flakeLayer(vec2 aspectUV, vec2 screenUV, float bandY, float scale, float la
              + vec2(sin(pc.time * (0.55 + h0 * 0.65) + spawnId * 25.0),
                     cos(pc.time * (0.48 + h1 * 0.60) + spawnId * 19.0)) * 0.18;
 
-    // Physical Depth of Field + wider natural size distribution (1px micro-dust to soft bokeh)
-    float defocus = abs(layerDepth - FOCUS_Z) / 2.0;
-    float sizeVar = 0.75 + pow(h1, 2.2) * 2.6;
-    float radiusPx = (1.15 * sizeVar + defocus * 5.2) * pxScale;
-    float dofDim = 1.0 / (1.0 + defocus * defocus * 2.2);
+    // Physical Depth of Field: mostly crisp 1px pinpoints, rare slightly larger flakes (never cell-clipped)
+    float defocus = abs(layerDepth - FOCUS_Z) / 2.2;
+    float sizeVar = 0.85 + pow(h1, 3.8) * 1.35;
+    float radiusPx = (1.05 * sizeVar + defocus * 2.6) * pxScale;
+    float dofDim = 1.0 / (1.0 + defocus * defocus * 2.4);
 
     float cellPx = pc.resolution.y / scale;
     float d = length(f - pos) / max(radiusPx / max(cellPx, 1.0), 0.002);
     if (d > 1.0) return vec3(0.0);
 
     float d2 = d * d;
-    // In-focus = sharp specular pinpoint; out-of-focus = soft bokeh circle
-    float sharp = exp(-d2 * 9.0) + exp(-d2 * 2.8) * 0.18;
-    float softBokeh = smoothstep(1.0, 0.35, d) * 0.75;
+    // Smooth luminous light profile (in-focus sharp pinpoint -> out-of-focus airy bokeh glow)
+    float sharp = exp(-d2 * 9.5) + exp(-d2 * 3.0) * 0.16;
+    float softBokeh = exp(-d2 * 2.6) * 0.65 + exp(-d2 * 7.0) * 0.25;
     float shape = mix(sharp, softBokeh, clamp(defocus * 0.85, 0.0, 1.0));
 
     vec3 eyePos = vec3((screenUV.x * 2.0 - 1.0) * 5.0, (0.5 - screenUV.y) * 2.5, -layerDepth);
@@ -179,18 +179,16 @@ void main() {
         vec2 ndc = vec2(px / (depth * 0.58 * aspect), py / (depth * 0.58));
         vec2 centerPx = vec2((ndc.x * 0.5 + 0.5) * res.x, (0.5 - ndc.y * 0.5) * res.y);
 
-        // Energy-conserving Depth of Field from FOCUS_Z = 5.8 (wider size range)
-        float defocus = abs(depth - FOCUS_Z) / 1.55;
-        float radiusPx = max(1.6, (1.6 + pow(h1, 2.0) * 2.4 + defocus * 7.2) * pxScale);
-        float dofDim = 1.0 / (1.0 + defocus * defocus * 2.0);
+        // Energy-conserving Depth of Field from FOCUS_Z = 5.8 (restrained bokeh size, soft light falloff)
+        float defocus = abs(depth - FOCUS_Z) / 1.75;
+        float radiusPx = max(1.4, (1.4 + pow(h1, 3.2) * 1.4 + defocus * 4.2) * pxScale);
+        float dofDim = 1.0 / (1.0 + defocus * defocus * 2.4);
 
         vec2 coord = (fragPx - centerPx) / radiusPx;
         float d2 = dot(coord, coord);
         if (d2 < 1.0) {
-            float d = sqrt(d2);
-            float sharp = exp(-d2 * 8.0) + exp(-d2 * 2.5) * 0.22;
-            float softBokeh = smoothstep(1.0, 0.40, d) * 0.62
-                            + smoothstep(0.55, 0.85, d) * smoothstep(1.0, 0.80, d) * 0.22;
+            float sharp = exp(-d2 * 8.5) + exp(-d2 * 2.8) * 0.20;
+            float softBokeh = exp(-d2 * 2.4) * 0.58 + exp(-d2 * 6.5) * 0.32;
             float shape = mix(sharp, softBokeh, clamp(defocus * 0.85, 0.0, 1.0));
 
             float refl = facetReflectance(vec3(px, py, -depth), t, h0, h1, fi * 0.13);
