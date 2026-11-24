@@ -452,11 +452,24 @@ Item {
       readonly property var submenuSnapshot: (inSubmenu && root.submenuSnapshotStack.length > 0)
         ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
         : null
-      // Single continuous firmware-verified submenu collapse factor (explore_plugin: 250 ms):
+      // Single continuous firmware-verified submenu collapse factor (xmb_plugin.prx .rodata: 240 ms):
       // 0 = full Level-1 XMB, 1 = settled Level-2 (cat shifts -257px/-10px, parent -> 316,
       // siblings -> 455 around focal Y with ◀ chevron, children slide in from +250px right).
       property real subT: inSubmenu ? 1.0 : 0.0
-      Behavior on subT { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+      Behavior on subT { NumberAnimation { duration: 240; easing.type: Easing.OutQuart } }
+      // Sony PAF 2-beat label stagger (xmb_plugin.prx 0x18060): 100 ms pause while outgoing labels
+      // clear fast (~110 ms) and icons glide ~65% home, then 200 ms OutCubic fade-in for incoming labels.
+      property real subLabelReveal: 1.0
+      SequentialAnimation {
+        id: subLabelRevealAnim
+        PauseAnimation { duration: 100 }
+        NumberAnimation { target: card; property: "subLabelReveal"; from: 0.0; to: 1.0; duration: 200; easing.type: Easing.OutCubic }
+      }
+      onInSubmenuChanged: {
+        subLabelRevealAnim.stop()
+        subLabelReveal = 0.0
+        subLabelRevealAnim.restart()
+      }
       readonly property real submenuParentX: categoryAnchorCenterX - Math.round(252 * hdScale)
       readonly property real submenuSibX: categoryAnchorCenterX - Math.round(113 * hdScale)
       readonly property real submenuFocalY: categoryList.baseTopMargin + categoryList.height + Math.round(72 * hdScale)
@@ -830,16 +843,16 @@ Item {
               styleColor: Qt.rgba(0, 0, 0, 0.35)
             }
 
-            // Parent item title + subtitle travel left with their icon and fade out as subT -> 1
-            // (and slide right + fade back in as subT -> 0 on exit), matching xmbRow's exact Column
-            // layout so there is zero vertical shift or subtitle pop-in at handoff.
+            // Outgoing Level-1 title + subtitle clear fast (~110 ms) as parent icon slides left,
+            // so child text never collides mid-flight (xmb_plugin.prx 2-beat choreography).
             Column {
-              visible: (1.0 - card.subT) > 0.01 && (modelData.label || "").length > 0
+              readonly property real outAlpha: Math.max(0.0, 1.0 - card.subT * 2.2)
+              visible: outAlpha > 0.01 && (modelData.label || "").length > 0
               x: parent.width * 0.5 + Math.round((isParentSel ? 90 : 54) * card.hdScale)
               width: Math.round(700 * card.hdScale)
               anchors.verticalCenter: parent.verticalCenter
               spacing: Math.round(2 * card.hdScale)
-              opacity: (1.0 - card.subT) * (isParentSel ? 1.0 : 0.85)
+              opacity: outAlpha * (isParentSel ? 1.0 : 0.85)
 
               Text {
                 width: parent.width
@@ -908,11 +921,11 @@ Item {
         spacing: 0
         visible: root.activeMenu !== "root" || root.filterText || root.dmenuActive
 
-        // Child column slides in from +250 px right as subT goes 0 -> 1.
+        // Child column slides in from +250 px right; waits 100 ms then fades in over 200 ms (subLabelReveal).
         transform: Translate {
           x: card.inSubmenu ? Math.round(250 * card.hdScale * (1.0 - card.subT)) : 0
         }
-        opacity: card.inSubmenu ? card.subT : 1.0
+        opacity: card.inSubmenu ? card.subLabelReveal : 1.0
 
         Text {
           width: 0
@@ -1042,7 +1055,7 @@ Item {
                 spacing: Math.round(2 * card.hdScale)
                 property real idleOpacity: (xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0
                 Behavior on idleOpacity { NumberAnimation { duration: card.navIdle ? 450 : 120; easing.type: Easing.OutCubic } }
-                opacity: idleOpacity * (1.0 - xmbRow.exitT)
+                opacity: idleOpacity * (card.inSubmenu ? 1.0 : card.subLabelReveal)
 
                 Item {
                   width: parent.width
