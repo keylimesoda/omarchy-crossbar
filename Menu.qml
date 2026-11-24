@@ -376,7 +376,7 @@ Item {
       }
 
       readonly property real uiScale: Math.max(1.0, panel.height / 1080)
-      readonly property string xmbFontFamily: "Noto Sans"
+      readonly property string xmbFontFamily: root.fontFamily
       property real glowPulse: 0.45
 
       SequentialAnimation on glowPulse {
