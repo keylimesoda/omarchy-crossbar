@@ -19,7 +19,17 @@ Item {
   // Plugin lifecycle hooks. The host calls open(payloadJson) after
   // `omarchy-shell shell summon omarchy.menu ...` and close() when hidden.
   property string pendingInitialMenu: "root"
+  // Native Modern-XMB Vulkan + AVX-512 Wayland layer-shell underlay (set false to fall back to QML shaders)
+  property bool useNativeBackend: true
+  property string nativeBackendBin: "/home/ric/Modern-XMB/build/modern_xmb"
+  property string nativeBackendQrc: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc"
   property real waveTargetX: 0
+
+  Process {
+    id: nativeBgProcess
+    running: root.useNativeBackend && panel.visible
+    command: [root.nativeBackendBin, "--layer-shell", root.nativeBackendQrc]
+  }
   property real waveTargetY: 0
   property real waveVelX: 0
   property real waveVelY: 0
@@ -103,13 +113,12 @@ Item {
     Image { id: xmbNoiseTex;    source: "shaders/noise.png";          visible: false; smooth: true;  mipmap: false }
     Image { id: xmbCloudTex;    source: "shaders/particle_cloud.png"; visible: false; smooth: false; mipmap: false }
 
-    // Offscreen 4x MSAA scene rendered at 0.5x resolution (e.g. 1080p on 4K = 4x lower fillrate;
-    // menu text/icons/clock stay native 4K on top). Disabled when menu is hidden.
+    // Offscreen 4x MSAA QML fallback scene (disabled when native Modern-XMB underlay is active).
     Item {
       id: xmbRawScene
       anchors.fill: parent
       visible: false
-      layer.enabled: panel.visible
+      layer.enabled: panel.visible && !root.useNativeBackend
       layer.samples: 4
       layer.smooth: true
       layer.textureSize: Qt.size(Math.max(1, Math.round(width * 0.5)), Math.max(1, Math.round(height * 0.5)))
@@ -156,7 +165,7 @@ Item {
           to: 85
           duration: 113000
           loops: Animation.Infinite
-          running: panel.visible
+          running: panel.visible && !root.useNativeBackend
         }
       }
 
@@ -185,7 +194,7 @@ Item {
           to: 64
           duration: 80000
           loops: Animation.Infinite
-          running: panel.visible
+          running: panel.visible && !root.useNativeBackend
         }
       }
 
@@ -202,7 +211,7 @@ Item {
       }
     }
 
-    // Quarter-res HDR glare bloom layer (~16x cheaper than full-4K blur, disabled when hidden).
+    // Quarter-res HDR glare bloom layer (disabled when hidden or native backend is active).
     MultiEffect {
       id: xmbBloomLayer
       source: xmbRawScene
@@ -212,14 +221,15 @@ Item {
       blur: 1.0
       blurMax: 24
       autoPaddingEnabled: false
-      layer.enabled: panel.visible
+      layer.enabled: panel.visible && !root.useNativeBackend
       layer.smooth: true
       layer.textureSize: Qt.size(Math.max(1, Math.round(width * 0.25)), Math.max(1, Math.round(height * 0.25)))
     }
 
-    // Final FS_COMPOSITE filmic tone-map + glare blend + anti-banding dither.
+    // Final FS_COMPOSITE filmic tone-map + glare blend (hidden when native Modern-XMB underlay is active).
     ShaderEffect {
       anchors.fill: parent
+      visible: !root.useNativeBackend
       opacity: 0.98
       property var sceneTex: xmbRawScene
       property var bloomTex: xmbBloomLayer
