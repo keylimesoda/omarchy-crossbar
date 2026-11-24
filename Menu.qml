@@ -996,9 +996,10 @@ Item {
                 y: xmbRow.exitOffsetY
               }
               visible: (y + exitOffsetY) + height > 0 && (y + exitOffsetY) < xmbResultList.height
-              opacity: (baseOpacity * barFade * bottomFade) * (1.0 - exitT) + exitSetAlpha * exitT
+              property real navOpacity: baseOpacity * barFade * bottomFade
+              Behavior on navOpacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+              opacity: navOpacity * (1.0 - exitT) + exitSetAlpha * exitT
               Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
-              Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
               Image {
                 id: xmbAppImage
@@ -1039,8 +1040,9 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Math.round(2 * card.hdScale)
-                opacity: ((xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0) * (1.0 - xmbRow.exitT)
-                Behavior on opacity { NumberAnimation { duration: card.navIdle ? 450 : 120; easing.type: Easing.OutCubic } }
+                property real idleOpacity: (xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0
+                Behavior on idleOpacity { NumberAnimation { duration: card.navIdle ? 450 : 120; easing.type: Easing.OutCubic } }
+                opacity: idleOpacity * (1.0 - xmbRow.exitT)
 
                 Item {
                   width: parent.width
