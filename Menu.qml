@@ -436,12 +436,12 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: Math.round(74 * card.hdScale) - card.anchors.topMargin
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.round(560 * card.hdScale)
+        width: Math.round(592 * card.hdScale)
         height: Math.round(59 * card.hdScale)
 
         // Sony 24x24 9-slice tex_indi_bg (8 px top/bottom/left, open on right), scaled from 1080p ref.
         BorderImage {
-          width: 560
+          width: 592
           height: 59
           transformOrigin: Item.TopLeft
           scale: card.hdScale
@@ -556,12 +556,10 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         readonly property real delegateWidth: Math.round(170 * card.hdScale)
         readonly property real categoryStep: Math.round(192 * card.hdScale)
-        // Leave room for earlier categories on the left. All delegates move
-        // around this point, so the selected category never depends on a
-        // Flickable's viewport or on whether a delegate is instantiated.
-        readonly property real selectedCenterX: Math.min(
-          width * 0.30,
-          Math.max(width * 0.20, categoryStep * 2.15)
+        // Exact PS3 1080p column axis (~568 px from screen left = 29.6% of 1920).
+        readonly property real selectedCenterX: Math.max(
+          width * 0.22,
+          Math.round(568 * card.hdScale) - card.anchors.leftMargin
         )
 
         Repeater {
@@ -686,7 +684,7 @@ Item {
         visible: card.inSubmenu
         opacity: card.inSubmenu ? 0.56 : 0.0
         x: Math.max(0, card.categoryAnchorCenterX - Math.round(84 * card.hdScale))
-        y: categoryList.y + categoryList.height + Math.round(48 * card.hdScale)
+        y: categoryList.y + categoryList.height + Math.round(72 * card.hdScale)
         height: Math.round(132 * card.hdScale)
         spacing: Math.round(12 * card.hdScale)
         Behavior on opacity { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
@@ -772,7 +770,7 @@ Item {
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
               readonly property int rowDist: Math.abs(index - root.selectedIndex)
-              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(48 * card.hdScale)
+              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(72 * card.hdScale)
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
               // the original label verbatim when the row is selected.
@@ -793,10 +791,10 @@ Item {
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(92 * card.hdScale) : Math.round(72 * card.hdScale))
               y: index < root.selectedIndex
-                ? categoryList.y - Math.round(14 * card.hdScale) - (root.selectedIndex - index) * rowStep
+                ? categoryList.y - Math.round(44 * card.hdScale) - (root.selectedIndex - index) * rowStep
                 : (index === root.selectedIndex
                   ? selectedY
-                  : selectedY + selectedHeight + (index - root.selectedIndex - 1) * rowStep)
+                  : selectedY + selectedHeight + Math.round(42 * card.hdScale) + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
               opacity: baseOpacity * barFade * bottomFade
               Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
@@ -878,7 +876,7 @@ Item {
                     text: xmbRow.displayLabel
                     color: "white"
                     font.family: card.xmbFontFamily
-                    font.pixelSize: xmbRow.selected ? Math.round(35 * card.hdScale) : Math.round(24 * card.hdScale)
+                    font.pixelSize: xmbRow.selected ? Math.round(37 * card.hdScale) : Math.round(24 * card.hdScale)
                     font.weight: xmbRow.selected ? Font.Medium : Font.Normal
                     style: xmbRow.selected ? Text.Normal : Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
