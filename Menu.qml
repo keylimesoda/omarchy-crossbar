@@ -375,7 +375,7 @@ Item {
         }
       }
 
-      readonly property real uiScale: Math.max(1.0, panel.height / 1080)
+      readonly property real uiScale: Math.max(1.0, panel.height / 1080) * 1.38
       readonly property string xmbFontFamily: root.fontFamily
       property real glowPulse: 0.45
 
@@ -408,8 +408,8 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: -Math.round(panel.height * 0.05)
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.max(Math.round(panel.width * 0.29), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(72 * card.uiScale))
-        height: Math.round(32 * card.uiScale)
+        width: Math.max(Math.round(panel.width * 0.30), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(72 * card.uiScale))
+        height: Math.round(36 * card.uiScale)
 
         // Subtle glass interior tint
         Rectangle {
@@ -463,14 +463,14 @@ Item {
               text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
               color: "white"
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.round(16.5 * card.uiScale)
+              font.pixelSize: Math.round(18.5 * card.uiScale)
               font.weight: Font.Normal
             }
 
             Canvas {
               id: analogDial
               anchors.verticalCenter: parent.verticalCenter
-              width: Math.round(21 * card.uiScale)
+              width: Math.round(23.5 * card.uiScale)
               height: width
               antialiasing: true
               property date timeValue: xmbClockBox.now
@@ -530,12 +530,12 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: Math.max(80, panel.height * 0.14)
-        height: Math.max(104, panel.height * 0.11)
+        anchors.topMargin: Math.max(80, panel.height * 0.13)
+        height: Math.max(132, panel.height * 0.14)
         clip: false
         visible: !root.dmenuActive
-        readonly property real delegateWidth: Math.max(88, panel.width * 0.072)
-        readonly property real categoryStep: Math.max(108, panel.width * 0.08)
+        readonly property real delegateWidth: Math.max(110, panel.width * 0.088)
+        readonly property real categoryStep: Math.max(136, panel.width * 0.098)
         // Leave room for earlier categories on the left. All delegates move
         // around this point, so the selected category never depends on a
         // Flickable's viewport or on whether a delegate is instantiated.
@@ -581,7 +581,7 @@ Item {
               text: category.icon
               color: Qt.rgba(1, 1, 1, category.selected ? 0.86 : 0.72)
               font.family: category.iconFont.length ? category.iconFont : card.xmbFontFamily
-              font.pixelSize: Math.max(40, panel.height * 0.052)
+              font.pixelSize: Math.max(52, panel.height * 0.068)
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.45)
             }
@@ -593,7 +593,7 @@ Item {
               text: category.label
               color: "white"
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.max(15, Math.round(15 * card.uiScale))
+              font.pixelSize: Math.max(18, Math.round(16 * card.uiScale))
               font.weight: Font.Light
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.55)
@@ -815,7 +815,7 @@ Item {
                     text: xmbRow.displayLabel
                     color: "white"
                     font.family: card.xmbFontFamily
-                    font.pixelSize: xmbRow.selected ? Math.round(18 * card.uiScale) : Math.round(14 * card.uiScale)
+                    font.pixelSize: xmbRow.selected ? Math.round(20 * card.uiScale) : Math.round(15.5 * card.uiScale)
                     font.weight: xmbRow.selected ? Font.Normal : Font.Light
                     style: Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
