@@ -399,42 +399,42 @@ Item {
         font.letterSpacing: 1.5
       }
 
-      // PS3 XMB top-right glass clock bar (rounded left corners, inner edge glow,
-      // edge-bleeding right side, drop-shadowed 12-hour text + chunky analog dial).
-      Rectangle {
+      // PS3 XMB top-right glass clock bar (sleek 9:1 edge-bleeding frame,
+      // uniform frosted-glass border glow, single-pass shadowed 12h text + analog dial).
+      Item {
         id: xmbClockBox
         anchors.right: parent.right
         anchors.rightMargin: -card.anchors.rightMargin - Math.round(6 * card.uiScale)
         anchors.top: parent.top
         anchors.topMargin: -Math.round(panel.height * 0.05)
         visible: !(root.filterText && root.mode !== "input")
-        width: Math.max(Math.round(panel.width * 0.29), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(48 * card.uiScale))
-        height: Math.round(42 * card.uiScale)
-        radius: Math.round(5 * card.uiScale)
-        border.width: Math.max(1, Math.round(1.2 * card.uiScale))
-        border.color: Qt.rgba(1, 1, 1, 0.72)
+        width: Math.max(Math.round(panel.width * 0.29), clockRow.implicitWidth + card.anchors.rightMargin + Math.round(72 * card.uiScale))
+        height: Math.round(32 * card.uiScale)
 
-        // Frosted glass top/bottom inner glow bevel
-        gradient: Gradient {
-          GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0.22) }
-          GradientStop { position: 0.18; color: Qt.rgba(1, 1, 1, 0.05) }
-          GradientStop { position: 0.82; color: Qt.rgba(1, 1, 1, 0.04) }
-          GradientStop { position: 1.00; color: Qt.rgba(1, 1, 1, 0.20) }
+        // Subtle glass interior tint
+        Rectangle {
+          anchors.fill: parent
+          radius: Math.round(4 * card.uiScale)
+          color: Qt.rgba(1, 1, 1, 0.04)
         }
 
-        // Soft left-edge inner glass highlight matching top/bottom bevel
+        // Uniform frosted-glass bloom hugging the rounded 1px border (no corner hotspots)
+        MultiEffect {
+          source: clockFrame
+          anchors.fill: clockFrame
+          blurEnabled: true
+          blur: 0.75
+          blurMax: Math.round(10 * card.uiScale)
+          opacity: 0.65
+        }
+
         Rectangle {
-          anchors.left: parent.left
-          anchors.top: parent.top
-          anchors.bottom: parent.bottom
-          anchors.margins: parent.border.width
-          width: Math.round(10 * card.uiScale)
-          radius: Math.max(0, parent.radius - 1)
-          gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.20) }
-            GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
-          }
+          id: clockFrame
+          anchors.fill: parent
+          radius: Math.round(4 * card.uiScale)
+          color: "transparent"
+          border.width: Math.max(1, Math.round(1.1 * card.uiScale))
+          border.color: Qt.rgba(1, 1, 1, 0.78)
         }
 
         property date now: new Date()
@@ -447,26 +447,15 @@ Item {
         }
 
         Item {
-          id: clockRowWrap
           anchors.right: parent.right
-          anchors.rightMargin: card.anchors.rightMargin + Math.round(16 * card.uiScale)
+          anchors.rightMargin: card.anchors.rightMargin + Math.round(28 * card.uiScale)
           anchors.verticalCenter: parent.verticalCenter
           width: clockRow.implicitWidth
           height: clockRow.implicitHeight
 
-          // Crisp PS3 drop shadow under both date/time text and analog dial
-          MultiEffect {
-            source: clockRow
-            anchors.fill: clockRow
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.62)
-            shadowBlur: 0.35
-            shadowHorizontalOffset: Math.round(1.5 * card.uiScale)
-            shadowVerticalOffset: Math.round(1.5 * card.uiScale)
-          }
-
           Row {
             id: clockRow
+            visible: false
             spacing: Math.round(9 * card.uiScale)
 
             Text {
@@ -474,7 +463,7 @@ Item {
               text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
               color: "white"
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.round(16 * card.uiScale)
+              font.pixelSize: Math.round(16.5 * card.uiScale)
               font.weight: Font.Normal
             }
 
@@ -494,8 +483,8 @@ Item {
                 var cx = width / 2
                 var cy = height / 2
                 var r = width * 0.41
-                var ringW = Math.max(1.8, width * 0.13)
-                var handW = Math.max(1.6, width * 0.115)
+                var ringW = Math.max(1.6, width * 0.115)
+                var handW = Math.max(1.5, width * 0.105)
 
                 ctx.strokeStyle = "rgba(255, 255, 255, 0.98)"
                 ctx.lineWidth = ringW
@@ -512,15 +501,26 @@ Item {
                 ctx.lineCap = "round"
                 ctx.beginPath()
                 ctx.moveTo(cx, cy)
-                ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.50, cy + Math.sin(hourAngle) * r * 0.50)
+                ctx.lineTo(cx + Math.cos(hourAngle) * r * 0.52, cy + Math.sin(hourAngle) * r * 0.52)
                 ctx.stroke()
 
                 ctx.beginPath()
                 ctx.moveTo(cx, cy)
-                ctx.lineTo(cx + Math.cos(minAngle) * r * 0.74, cy + Math.sin(minAngle) * r * 0.74)
+                ctx.lineTo(cx + Math.cos(minAngle) * r * 0.76, cy + Math.sin(minAngle) * r * 0.76)
                 ctx.stroke()
               }
             }
+          }
+
+          // Single crisp pass rendering clockRow + its PS3 drop shadow
+          MultiEffect {
+            source: clockRow
+            anchors.fill: clockRow
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.65)
+            shadowBlur: 0.30
+            shadowHorizontalOffset: Math.round(1.5 * card.uiScale)
+            shadowVerticalOffset: Math.round(1.5 * card.uiScale)
           }
         }
       }
