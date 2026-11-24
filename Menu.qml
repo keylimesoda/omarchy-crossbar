@@ -842,19 +842,39 @@ Item {
               styleColor: Qt.rgba(0, 0, 0, 0.35)
             }
 
-            // Parent item text travels left with its icon and fades out as subT -> 1
-            // (and slides right + fades back in as subT -> 0 on exit), matching xmb-web drawParentLayer.
-            Text {
+            // Parent item title + subtitle travel left with their icon and fade out as subT -> 1
+            // (and slide right + fade back in as subT -> 0 on exit), matching xmbRow's exact Column
+            // layout so there is zero vertical shift or subtitle pop-in at handoff.
+            Column {
               visible: (1.0 - card.subT) > 0.01 && (modelData.label || "").length > 0
-              x: width > 0 ? (parent.width * 0.5 + Math.round((isParentSel ? 90 : 54) * card.hdScale)) : 0
+              x: parent.width * 0.5 + Math.round((isParentSel ? 90 : 54) * card.hdScale)
+              width: Math.round(700 * card.hdScale)
               anchors.verticalCenter: parent.verticalCenter
-              text: modelData.label || ""
-              color: "white"
+              spacing: Math.round(2 * card.hdScale)
               opacity: (1.0 - card.subT) * (isParentSel ? 1.0 : 0.85)
-              font.family: card.xmbFontFamily
-              font.pixelSize: Math.round((isParentSel ? 34 : 24) * card.hdScale)
-              style: Text.Raised
-              styleColor: Qt.rgba(0, 0, 0, 0.25)
+
+              Text {
+                width: parent.width
+                text: modelData.label || ""
+                color: "white"
+                font.family: card.xmbFontFamily
+                font.pixelSize: Math.round((isParentSel ? 34 : 24) * card.hdScale)
+                style: isParentSel ? Text.Normal : Text.Raised
+                styleColor: Qt.rgba(0, 0, 0, 0.25)
+                elide: Text.ElideRight
+              }
+
+              Text {
+                width: parent.width
+                visible: isParentSel && (modelData.subtitle || "").length > 0
+                text: modelData.subtitle || ""
+                color: Qt.rgba(1, 1, 1, 0.88)
+                font.family: card.xmbFontFamily
+                font.pixelSize: Math.round(21 * card.hdScale)
+                style: Text.Raised
+                styleColor: Qt.rgba(0, 0, 0, 0.25)
+                elide: Text.ElideRight
+              }
             }
 
             MouseArea {
@@ -1806,8 +1826,14 @@ Item {
       var snapRows = []
       for (var s = 0; s < displayModel.count; s++) {
         var r = displayModel.get(s)
+        var rawLabel = r.label || ""
+        var rawDetail = r.detail || ""
+        var subTxt = rawDetail.length > 0
+          ? rawDetail
+          : (r.childCount > 0 ? (r.childCount + (r.childCount === 1 ? " Item" : " Items")) : "")
         snapRows.push({
-          label: r.label || "",
+          label: rawLabel,
+          subtitle: subTxt,
           icon: r.icon || "",
           iconFont: r.iconFont || "",
           kind: r.kind || "",
