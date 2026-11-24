@@ -41,6 +41,10 @@ Item {
     id: ps3FontLight
     source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-L-LATIN.TTF"
   }
+  FontLoader {
+    id: ps3FontBold
+    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-B-LATIN.TTF"
+  }
   property real waveTargetY: 0
   property real waveVelX: 0
   property real waveVelY: 0
@@ -413,6 +417,32 @@ Item {
         NumberAnimation { from: 0.95; to: 0.35; duration: 900; easing.type: Easing.InOutSine }
       }
 
+      // Authentic PS3 XMB idle behavior: after ~1.6s without moving, smoothly fade out
+      // unselected vertical row labels, leaving icons + the focused item's text.
+      property bool navIdle: false
+      function pokeNavIdle() {
+        navIdle = false
+        if (panel.visible && !root.dmenuActive && !root.filterText) xmbIdleTimer.restart()
+        else xmbIdleTimer.stop()
+      }
+      Timer {
+        id: xmbIdleTimer
+        interval: 1600
+        repeat: false
+        onTriggered: card.navIdle = true
+      }
+      Connections {
+        target: root
+        function onSelectedIndexChanged() { card.pokeNavIdle() }
+        function onCategoryIndexChanged() { card.pokeNavIdle() }
+        function onActiveMenuChanged() { card.pokeNavIdle() }
+        function onFilterTextChanged() { card.pokeNavIdle() }
+      }
+      Connections {
+        target: panel
+        function onVisibleChanged() { card.pokeNavIdle() }
+      }
+
       Text {
         anchors.right: parent.right
         anchors.top: parent.top
@@ -475,7 +505,7 @@ Item {
             color: "white"
             font.family: card.xmbFontFamily
             font.pixelSize: Math.round(25 * card.hdScale)
-            font.weight: Font.Normal
+            font.weight: Font.Bold
             style: Text.Raised
             styleColor: Qt.rgba(0, 0, 0, 0.55)
           }
@@ -614,7 +644,7 @@ Item {
               Behavior on opacity { NumberAnimation { duration: 150 } }
               font.family: card.xmbFontFamily
               font.pixelSize: Math.round(21 * card.hdScale)
-              font.weight: Font.Normal
+              font.weight: Font.Bold
               style: Text.Raised
               styleColor: Qt.rgba(0, 0, 0, 0.55)
             }
@@ -850,6 +880,8 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Math.round(2 * card.hdScale)
+                opacity: (xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0
+                Behavior on opacity { NumberAnimation { duration: card.navIdle ? 450 : 120; easing.type: Easing.OutCubic } }
 
                 Item {
                   width: parent.width
@@ -877,7 +909,7 @@ Item {
                     color: "white"
                     font.family: card.xmbFontFamily
                     font.pixelSize: xmbRow.selected ? Math.round(37 * card.hdScale) : Math.round(24 * card.hdScale)
-                    font.weight: xmbRow.selected ? Font.Medium : Font.Normal
+                    font.weight: xmbRow.selected ? Font.Bold : Font.Normal
                     style: xmbRow.selected ? Text.Normal : Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
                     elide: Text.ElideRight
