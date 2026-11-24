@@ -28,7 +28,7 @@ Item {
 
   Process {
     id: nativeBgProcess
-    running: root.useNativeBackend && panel.visible
+    running: root.useNativeBackend && root.opened && root.rowsLoaded
     command: [root.nativeBackendBin, "--layer-shell", "--opacity", String(root.nativeBackendOpacity), root.nativeBackendQrc]
   }
 
@@ -102,13 +102,39 @@ Item {
   // focused output, matching the behavior of the packaged Omarchy menu.
   PanelWindow {
     id: panel
-    visible: root.opened && root.rowsLoaded
+    property bool fadeOutActive: false
+    visible: (root.opened || fadeOutActive) && root.rowsLoaded
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
     WlrLayershell.namespace: "omarchy-menu"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
+
+    Timer {
+      id: panelFadeOutTimer
+      interval: 200
+      repeat: false
+      onTriggered: panel.fadeOutActive = false
+    }
+
+    Connections {
+      target: root
+      function onOpenedChanged() {
+        if (root.opened) {
+          panelFadeOutTimer.stop()
+          panel.fadeOutActive = false
+          xmbFadeOutAnim.stop()
+          card.opacity = 0.0
+          xmbFadeInAnim.restart()
+        } else if (panel.visible) {
+          xmbFadeInAnim.stop()
+          panel.fadeOutActive = true
+          xmbFadeOutAnim.restart()
+          panelFadeOutTimer.restart()
+        }
+      }
+    }
 
     // Compatibility hooks used by the retained menu/search model.
     property int cardTop: -1
@@ -259,6 +285,24 @@ Item {
       anchors.topMargin: Math.max(70, panel.height * 0.12)
       anchors.bottomMargin: 0
       readonly property real categoryAnchorCenterX: categoryList.selectedCenterX
+      opacity: 0.0
+
+      // Authentic PS3 In-Game XMB summon/dismiss choreography:
+      // 70 ms stagger behind the ribbon fade-in, then fade straight in place over 240 ms;
+      // reverse smoothly over 180 ms on dismiss.
+      SequentialAnimation {
+        id: xmbFadeInAnim
+        PauseAnimation { duration: 70 }
+        NumberAnimation { target: card; property: "opacity"; from: 0.0; to: 1.0; duration: 240; easing.type: Easing.OutCubic }
+      }
+      NumberAnimation {
+        id: xmbFadeOutAnim
+        target: card
+        property: "opacity"
+        to: 0.0
+        duration: 180
+        easing.type: Easing.InCubic
+      }
 
       MouseArea { anchors.fill: parent; onClicked: {} }
 
