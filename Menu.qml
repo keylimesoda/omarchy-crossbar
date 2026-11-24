@@ -23,12 +23,13 @@ Item {
   property bool useNativeBackend: true
   property string nativeBackendBin: "/home/ric/Modern-XMB/build/modern_xmb"
   property string nativeBackendQrc: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc"
+  property real nativeBackendOpacity: 0.86
   property real waveTargetX: 0
 
   Process {
     id: nativeBgProcess
     running: root.useNativeBackend && panel.visible
-    command: [root.nativeBackendBin, "--layer-shell", root.nativeBackendQrc]
+    command: [root.nativeBackendBin, "--layer-shell", "--opacity", String(root.nativeBackendOpacity), root.nativeBackendQrc]
   }
   property real waveTargetY: 0
   property real waveVelX: 0
@@ -861,36 +862,36 @@ Item {
                   width: parent.width
                   height: xmbRowLabel.implicitHeight
 
-                  // Outer wide bloom (breathes & drifts smoothly with the silk ribbon)
+                  // Tighter single-pass-friendly bloom radii prevent 8-bit concentric alpha
+                  // quantization rings when composited on a transparent Wayland layer.
                   MultiEffect {
                     source: xmbRowLabel
                     width: xmbRowLabel.width
                     height: xmbRowLabel.height
                     anchors.centerIn: xmbRowLabel
-                    anchors.horizontalCenterOffset: card.glowDriftX
-                    anchors.verticalCenterOffset: card.glowDriftY
+                    anchors.horizontalCenterOffset: card.glowDriftX * 0.6
+                    anchors.verticalCenterOffset: card.glowDriftY * 0.6
                     visible: xmbRow.selected
                     blurEnabled: true
-                    blur: 0.55 + 0.45 * card.glowPulse
-                    blurMax: Math.round(34 * card.uiScale)
-                    brightness: 0.55
-                    opacity: 0.18 + 0.74 * card.glowPulse
+                    blur: 0.60 + 0.35 * card.glowPulse
+                    blurMax: Math.round(16 * card.uiScale)
+                    brightness: 0.45
+                    opacity: 0.28 + 0.48 * card.glowPulse
                   }
 
-                  // Tight bright inner bloom (subtle counter-drift + slow breath)
                   MultiEffect {
                     source: xmbRowLabel
                     width: xmbRowLabel.width
                     height: xmbRowLabel.height
                     anchors.centerIn: xmbRowLabel
-                    anchors.horizontalCenterOffset: -card.glowDriftX * 0.35
-                    anchors.verticalCenterOffset: card.glowDriftY * 0.35
+                    anchors.horizontalCenterOffset: -card.glowDriftX * 0.25
+                    anchors.verticalCenterOffset: card.glowDriftY * 0.25
                     visible: xmbRow.selected
                     blurEnabled: true
-                    blur: 0.48 + 0.48 * card.glowPulse
-                    blurMax: Math.round(15 * card.uiScale)
-                    brightness: 0.80
-                    opacity: 0.25 + 0.75 * card.glowPulse
+                    blur: 0.50 + 0.40 * card.glowPulse
+                    blurMax: Math.round(8 * card.uiScale)
+                    brightness: 0.70
+                    opacity: 0.35 + 0.55 * card.glowPulse
                   }
 
                   Text {
