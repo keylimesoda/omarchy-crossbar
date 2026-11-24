@@ -842,6 +842,21 @@ Item {
               styleColor: Qt.rgba(0, 0, 0, 0.35)
             }
 
+            // Parent item text travels left with its icon and fades out as subT -> 1
+            // (and slides right + fades back in as subT -> 0 on exit), matching xmb-web drawParentLayer.
+            Text {
+              visible: (1.0 - card.subT) > 0.01 && (modelData.label || "").length > 0
+              x: width > 0 ? (parent.width * 0.5 + Math.round((isParentSel ? 90 : 54) * card.hdScale)) : 0
+              anchors.verticalCenter: parent.verticalCenter
+              text: modelData.label || ""
+              color: "white"
+              opacity: (1.0 - card.subT) * (isParentSel ? 1.0 : 0.85)
+              font.family: card.xmbFontFamily
+              font.pixelSize: Math.round((isParentSel ? 34 : 24) * card.hdScale)
+              style: Text.Raised
+              styleColor: Qt.rgba(0, 0, 0, 0.25)
+            }
+
             MouseArea {
               enabled: isParentSel
               anchors.fill: parent
@@ -883,13 +898,16 @@ Item {
           ? Math.max(420, Style.space(root.dmenuWidth), panel.width * 0.5)
           : Math.max(420, panel.width * 0.34), parent.width - x - (root.dmenuActive ? 32 : 0))
         spacing: 0
-        visible: root.activeMenu !== "root" || root.filterText || root.dmenuActive
+        // During Level-2 exit (subT > 0.001), submenuBreadcrumbLayer renders the entire returning
+        // Level-1 list (icons + fading text) continuously; xmbListColumn hands off seamlessly at subT <= 0.001.
+        visible: (root.activeMenu !== "root" || root.filterText || root.dmenuActive)
+          && (card.inSubmenu || card.subT <= 0.001)
 
-        // Child column slides in from +250 px right as subT goes 0 -> 1; on exit, Level-1 fades back in as subT -> 0.
+        // Child column slides in from +250 px right as subT goes 0 -> 1.
         transform: Translate {
           x: card.inSubmenu ? Math.round(250 * card.hdScale * (1.0 - card.subT)) : 0
         }
-        opacity: card.inSubmenu ? card.subT : (1.0 - card.subT)
+        opacity: card.inSubmenu ? card.subT : 1.0
 
         Text {
           width: 0
@@ -933,9 +951,8 @@ Item {
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
               readonly property int rowDist: Math.abs(index - root.selectedIndex)
-              readonly property real selectedY: card.inSubmenu
-                ? card.submenuFocalY
-                : (categoryList.y + categoryList.height + Math.round(72 * card.hdScale))
+              // Anchor to categoryList.baseTopMargin (constant) so Behavior on y never lags behind subT!
+              readonly property real selectedY: card.submenuFocalY
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
               // the original label verbatim when the row is selected.
@@ -951,14 +968,14 @@ Item {
               readonly property real rowStep: root.dmenuActive ? Math.round(104 * card.hdScale) : Math.round(80 * card.hdScale)
               readonly property real baseOpacity: selected ? 1.0 : Math.max(0.0, 0.78 - rowDist * 0.12)
               readonly property real rowCenterY: y + height * 0.5
-              readonly property real barFade: (!root.dmenuActive && !card.inSubmenu && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
+              readonly property real barFade: (!root.dmenuActive && !card.inSubmenu && rowCenterY > categoryList.baseTopMargin && rowCenterY < categoryList.baseTopMargin + categoryList.height) ? 0.15 : 1.0
               readonly property real bottomFade: Math.min(1.0, Math.max(0.0, (xmbResultList.height - (y + height)) / Math.round(90 * card.hdScale)))
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(92 * card.hdScale) : Math.round(72 * card.hdScale))
               y: index < root.selectedIndex
                 ? (card.inSubmenu
                   ? (selectedY - Math.round(12 * card.hdScale) - (root.selectedIndex - index) * rowStep)
-                  : (categoryList.y - Math.round(44 * card.hdScale) - (root.selectedIndex - index) * rowStep))
+                  : (categoryList.baseTopMargin - Math.round(44 * card.hdScale) - (root.selectedIndex - index) * rowStep))
                 : (index === root.selectedIndex
                   ? selectedY
                   : selectedY + selectedHeight + Math.round(card.inSubmenu ? 18 : 42) * card.hdScale + (index - root.selectedIndex - 1) * rowStep)
@@ -969,7 +986,7 @@ Item {
 
               Image {
                 id: xmbAppImage
-                visible: xmbRow.kind === "app" && (card.inSubmenu || card.subT <= 0.001)
+                visible: xmbRow.kind === "app"
                 width: xmbRow.selected ? Math.round(116 * card.hdScale) : Math.round(56 * card.hdScale)
                 height: width
                 anchors.horizontalCenter: xmbRowIcon.horizontalCenter
@@ -983,7 +1000,7 @@ Item {
 
               Text {
                 id: xmbRowIcon
-                visible: xmbRow.kind !== "app" && (card.inSubmenu || card.subT <= 0.001)
+                visible: xmbRow.kind !== "app"
                 width: Math.round(144 * card.hdScale)
                 height: parent.height
                 anchors.left: parent.left
@@ -1790,6 +1807,7 @@ Item {
       for (var s = 0; s < displayModel.count; s++) {
         var r = displayModel.get(s)
         snapRows.push({
+          label: r.label || "",
           icon: r.icon || "",
           iconFont: r.iconFont || "",
           kind: r.kind || "",
