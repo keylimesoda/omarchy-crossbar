@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+python3 -m json.tool "$root/manifest.json" >/dev/null
+
+if grep -rnE '/home/[a-zA-Z0-9._-]+/' "$root/Menu.qml" "$root/BarWidget.qml" "$root/MenuModel.js" "$root/manifest.json" >/dev/null 2>&1; then
+  echo "ERROR: Hardcoded /home/<user>/ path found in plugin source." >&2
+  exit 1
+fi
+
+if command -v omarchy >/dev/null 2>&1; then
+  omarchy plugin validate "$root"
+fi
+
+node "$root/tests/test_model.js"
+printf 'All portable plugin checks passed.\n'

@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "io.github.surfacedp.xmb-menu",
-  "name": "XMB Menu",
-  "version": "1.3.4",
-  "author": "Patrick",
-  "description": "A full-screen, PS3-inspired XMB interface for the Omarchy menu",
+  "id": "io.github.keylimesoda.crossbar",
+  "name": "Crossbar",
+  "version": "1.0.0",
+  "author": "Ric",
+  "license": "MIT",
+  "description": "A PS3-authentic XrossMediaBar (XMB) interface for the Omarchy menu with optional Modern-XMB Vulkan ribbon and particle wind integration",
   "kinds": [
     "menu",
     "bar-widget"
@@ -18,8 +19,8 @@
     "clonedFrom": "omarchy.menu"
   },
   "barWidget": {
-    "displayName": "XMB Menu",
-    "description": "Launches the PS3-inspired Omarchy menu",
+    "displayName": "Crossbar",
+    "description": "Launches the PS3-authentic Crossbar Omarchy menu",
     "category": "Compositor",
     "allowMultiple": false
   }

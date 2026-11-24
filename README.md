@@ -1,99 +1,95 @@
-# XMB Menu for Omarchy
+# Crossbar for Omarchy
 
-A full-screen, PS3-inspired cross-media-bar interface for Omarchy's main menu.
-It preserves the existing menu structure, application launcher, providers,
-actions, search, and `SUPER + SPACE` shortcut while replacing the presentation
-with an animated horizontal-and-vertical XMB layout.
+[![Built for Omarchy: Plugin](https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-plugin.svg)](https://github.com/tcballard/omarchy-badges)
 
-![XMB Menu preview](preview.png)
+A PS3-authentic XrossMediaBar (XMB) interface for Omarchy's main menu (`SUPER + SPACE`), forked from [surfacedP/omarchy-xmb-menu](https://github.com/surfacedP/omarchy-xmb-menu). Preserves the full Omarchy menu tree, application launcher, providers, global search, and bar widget while upgrading the presentation to firmware-faithful 1080p/4K proportions, 2-beat multi-level drilldowns, pulsing `PhText` selection glow, a TV-safe-zone clock bar, and optional live integration with the native Vulkan [Modern-XMB](https://github.com/keylimesoda/Modern-XMB) ribbon & bokeh particle engine.
 
-## Features
+![Crossbar preview](preview.png)
 
-- Fixed-position horizontal category carousel
-- Inline vertical item carousel
-- Global search across menu entries and applications
-- Animated translucent background ribbons
-- Keyboard, mouse-wheel, touchpad, and click navigation
-- Focused-monitor presentation
-- Existing Omarchy top bar remains unchanged
-- Reversible replacement for the packaged `omarchy.menu`
+## What you get
+
+- **Firmware-faithful XMB geometry:** Exact 1080p-referenced scaling (`panel.height / 1080`) up to 4K, 90% TV overscan safe-zone top-right clock bar with live analog dial, and `OutQuart` D-pad scroll & focus easing.
+- **Multi-level drilldowns (L2, L3, L4+):** Authentic 3-column accordion collapse (shifted active category, collapsed parent icon + `◀` back chevron + dimmed icon-only sibling stack) with Sony's 2-beat 100 ms label stagger and zero-handoff return glide.
+- **Authentic `PhText` selection glow & idle fade:** Centered sinusoidal white shadow bloom on the active label (`0.35 ↔ 0.95`, 1.8 s cycle) and automatic idle fade-out of unselected vertical labels while resting.
+- **Dual background renderers:**
+  - **Optimal path:** Auto-discovers `modern_xmb` (Vulkan 1.4 + AVX-512 Wayland `wlr-layer-shell` underlay) with live navigation particle wind and real-time hover-preview IPC over `$XDG_RUNTIME_DIR/modern-xmb-wind.sock`.
+  - **Zero-dependency fallback:** Built-in pure-QML shader ribbon and frosted-glass clock capsule activate automatically if `modern_xmb` or optional assets are not installed.
+- **In-menu customization (`Appearance → XMB Menu`):** Live-preview Theme / Wave `.qrc`, Month / Color sync, Time of Day sync, Background Opacity, Font, Clock Format (12h/24h), and Renderer, persisted to `~/.config/omarchy/crossbar.json`.
+
+## Controls
+
+- `Left` / `Right`: switch root categories (or step back/forward in submenus)
+- `Up` / `Down` / `PageUp` / `PageDown`: scroll vertical items
+- `Enter` / `Right`: open submenu, launch app, or confirm setting
+- `Left` / `Backspace`: go back (and revert uncommitted setting hover-previews)
+- `Esc` or `SUPER + SPACE`: dismiss cleanly
+- Type anywhere: global search across menu entries and applications
+- `Delete`: uninstall a selected application (with confirmation modal)
+- Mouse wheel, touchpad scroll, and direct click supported throughout
+
+## Optional: Native Vulkan `Modern-XMB` Backend
+
+Crossbar works out of the box with its built-in QML shader ribbon. For the full native Vulkan silk ribbon, monthly sky LUTs, auto time-of-day lighting, and 32×16 navigation particle wind:
+
+1. Install `modern_xmb` on your `$PATH` (or build `Modern-XMB` into `~/Modern-XMB/build/modern_xmb`, or set `MODERN_XMB_BIN`).
+2. Place `.qrc` themes (and optional user-supplied `fonts/` and `ui/tex_indi_bg.png`) in `~/.local/share/modern-xmb/` (or `/usr/share/modern-xmb/`, `~/Modern-XMB/assets/`, or `MODERN_XMB_ASSETS`).
+3. Reopen the menu—Crossbar detects `modern_xmb` automatically on startup and exposes discovered `.qrc` themes under **Appearance → XMB Menu → Theme / Wave**.
 
 ## Requirements
 
 - Omarchy 4 / Quattro with the Quickshell plugin system
-- No third-party packages or services
+- Python 3 stdlib (used for startup binary/asset discovery, UNIX datagram wind bridge, and atomic settings writes)
+- Optional: `modern_xmb` binary for the native Vulkan underlay
 
-The plugin reads Omarchy's existing menu definitions and uses the commands and
-application data already provided by the system. If Omarchy does not inject an
-app library into a third-party menu, XMB loads the host's `qs.services.AppLibrary`
-as a fallback. This preserves Omarchy's app filtering, icon lookup, and launch
-feedback, but depends on that internal host module remaining available.
+## Files written & processes launched
 
-## Install
+- **Settings file written:** `~/.config/omarchy/crossbar.json` (only when you change a setting under `Appearance → XMB Menu`; left intact on plugin removal so reinstalls preserve preferences).
+- **Processes launched:**
+  - Startup one-shot Python probe to locate `modern_xmb` and available `.qrc` themes.
+  - While the menu is open with the native backend active: `modern_xmb --layer-shell ...` and a lightweight Python `AF_UNIX` `SOCK_DGRAM` bridge writing navigation/preview commands to `$XDG_RUNTIME_DIR/modern-xmb-wind.sock` (both terminate cleanly on menu close).
+  - Standard Omarchy menu guards and user-selected actions/apps.
 
-```bash
-omarchy plugin add https://github.com/surfacedP/omarchy-xmb-menu.git --enable
-```
-
-Enabling the plugin routes the existing Omarchy menu shortcut to the XMB
-interface. The packaged menu is not modified.
-
-## Controls
-
-- Left / Right: choose a root category
-- Up / Down: choose an item
-- Mouse wheel / two-finger touchpad: scroll using the system sensitivity
-- Click: open an item or choose a category
-- Enter / Right: open or run
-- Left / Backspace: go back inside nested menus
-- Escape or `SUPER + SPACE`: close
-- Type: search all menu entries and applications
-- Delete: uninstall a selected application, with confirmation
-
-## Update
+## Installation
 
 ```bash
-omarchy plugin update io.github.surfacedp.xmb-menu
+omarchy plugin add https://github.com/keylimesoda/omarchy-crossbar.git --enable
 ```
 
-## Disable or remove
-
-Disable the XMB interface while keeping it installed:
+Local checkout:
 
 ```bash
-omarchy plugin disable io.github.surfacedp.xmb-menu
+omarchy plugin add "$(pwd)" --enable
 ```
 
-Remove it completely:
+Update:
 
 ```bash
-omarchy plugin remove io.github.surfacedp.xmb-menu
+omarchy plugin update io.github.keylimesoda.crossbar
 ```
 
-Disabling or removing the plugin restores the packaged `omarchy.menu`. Your
-Omarchy menu configuration and top bar are not deleted or overwritten.
+Disable (restores packaged `omarchy.menu` while keeping Crossbar installed):
 
-## Configuration
+```bash
+omarchy plugin disable io.github.keylimesoda.crossbar
+```
 
-The plugin deliberately uses the standard Omarchy menu configuration, including
-user additions in `~/.config/omarchy/extensions/omarchy-menu.jsonc`. It does not
-introduce a separate menu database.
+Remove completely:
 
-## Attribution and trademarks
+```bash
+omarchy plugin remove io.github.keylimesoda.crossbar
+```
 
-Thanks to [gbflores](https://github.com/gbflores) for diagnosing and proposing
-an empty Apps menu fix in [PR #3](https://github.com/surfacedP/omarchy-xmb-menu/pull/3),
-and to [LeonardoM011](https://github.com/LeonardoM011) for identifying the Qt
-manifest-sequence issue and proposing reuse of the host's app library in the
-[PR discussion](https://github.com/surfacedP/omarchy-xmb-menu/pull/3#issuecomment-5759495158).
+## Tests
 
-This project is derived from the MIT-licensed Omarchy menu implementation by
-David Heinemeier Hansson and contributors. The XMB-inspired visual presentation
-and plugin modifications are maintained by Patrick Brook.
+```bash
+./tests/run
+```
 
-"PlayStation" and "PS3" are trademarks of Sony Interactive Entertainment.
-This unofficial community project is not affiliated with or endorsed by Sony.
-No Sony artwork, firmware, or other proprietary assets are included.
+## Credits & trademark notice
+
+Forked from [surfacedP/omarchy-xmb-menu](https://github.com/surfacedP/omarchy-xmb-menu) by Patrick Brook, derived from the MIT-licensed Omarchy menu by David Heinemeier Hansson and contributors.
+
+"PlayStation", "PS3", and "XMB" / "XrossMediaBar" are trademarks of Sony Interactive Entertainment. This unofficial community project is not affiliated with or endorsed by Sony. No Sony artwork, firmware, fonts, or proprietary assets are included in this repository.
 
 ## License
 

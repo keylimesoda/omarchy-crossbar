@@ -19,22 +19,75 @@ Item {
   // Plugin lifecycle hooks. The host calls open(payloadJson) after
   // `omarchy-shell shell summon omarchy.menu ...` and close() when hidden.
   property string pendingInitialMenu: "root"
-  // Native Modern-XMB Vulkan + AVX-512 Wayland layer-shell underlay (set false to fall back to QML shaders)
-  property string xmbConfigPath: Quickshell.env("HOME") + "/.config/omarchy/xmb-menu.json"
+  // Optional native Modern-XMB Vulkan + AVX-512 Wayland layer-shell underlay.
+  // Auto-discovers modern_xmb on PATH / ~/.local/share/modern-xmb / ~/Modern-XMB and falls back
+  // seamlessly to the built-in pure-QML shader ribbon when unavailable.
+  property string xmbConfigPath: Quickshell.env("HOME") + "/.config/omarchy/crossbar.json"
   property bool useNativeBackend: true
-  property string nativeBackendBin: "/home/ric/Modern-XMB/build/modern_xmb"
-  property string nativeBackendQrc: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc"
+  property string nativeBackendBin: ""
+  property string modernXmbAssetsDir: ""
+  property var discoveredQrcPresets: []
+  property string nativeBackendQrc: ""
   property string xmbMonth: "auto"
   property string xmbTime: "auto"
   property real nativeBackendOpacity: 0.99
   property string xmbFontChoice: "rodin"
   property bool xmbClock24h: false
   property bool xmbPreviewActive: false
+  readonly property bool effectiveNativeBackend: root.useNativeBackend
+    && root.nativeBackendBin.length > 0
+    && root.nativeBackendQrc.length > 0
   property real waveTargetX: 0
+
+  // One-shot startup probe to locate modern_xmb binary, asset directory, and available .qrc themes.
+  Process {
+    id: nativeEnvProbe
+    running: true
+    command: ["python3", "-c",
+      "import glob,json,os,shutil\n" +
+      "home=os.path.expanduser('~')\n" +
+      "env_dir=os.environ.get('MODERN_XMB_DIR','')\n" +
+      "bin_cands=[os.environ.get('MODERN_XMB_BIN',''),shutil.which('modern_xmb') or ''," +
+      "os.path.join(home,'.local/bin/modern_xmb')," +
+      "(os.path.join(env_dir,'build/modern_xmb') if env_dir else '')," +
+      "os.path.join(home,'Modern-XMB/build/modern_xmb')]\n" +
+      "bin_path=next((p for p in bin_cands if p and os.path.isfile(p) and os.access(p,os.X_OK)),'')\n" +
+      "asset_cands=[os.environ.get('MODERN_XMB_ASSETS','')," +
+      "os.path.join(home,'.local/share/modern-xmb'),'/usr/share/modern-xmb'," +
+      "(os.path.join(env_dir,'assets') if env_dir else '')," +
+      "os.path.join(home,'Modern-XMB/assets')]\n" +
+      "assets_dir=next((d for d in asset_cands if d and os.path.isdir(d)),'')\n" +
+      "qrcs=[]\n" +
+      "if assets_dir:\n" +
+      "  for p in sorted(glob.glob(os.path.join(assets_dir,'qrc','*.qrc'))):\n" +
+      "    stem=os.path.splitext(os.path.basename(p))[0]\n" +
+      "    label=stem.replace('_',' ').title()\n" +
+      "    qrcs.append({'id':stem,'label':label,'path':p})\n" +
+      "print(json.dumps({'bin':bin_path,'assets':assets_dir,'qrcs':qrcs}))\n"
+    ]
+    stdout: SplitParser {
+      onRead: function(line) {
+        try {
+          var info = JSON.parse(line)
+          root.nativeBackendBin = info.bin || ""
+          root.modernXmbAssetsDir = info.assets || ""
+          root.discoveredQrcPresets = info.qrcs || []
+          if (!root.nativeBackendQrc && root.discoveredQrcPresets.length > 0) {
+            var stock = null
+            for (var i = 0; i < root.discoveredQrcPresets.length; i++) {
+              if (root.discoveredQrcPresets[i].id === "stock_ofw_lines") { stock = root.discoveredQrcPresets[i].path; break }
+            }
+            root.nativeBackendQrc = stock || root.discoveredQrcPresets[0].path
+          }
+          if (root.rowsLoaded) root.rebuildItemsFromSources()
+        } catch (e) {}
+      }
+    }
+  }
 
   Process {
     id: nativeBgProcess
-    running: root.useNativeBackend && root.opened && root.rowsLoaded
+    running: root.effectiveNativeBackend && root.opened && root.rowsLoaded
     command: [
       root.nativeBackendBin,
       "--layer-shell",
@@ -49,7 +102,7 @@ Item {
   // and live preview IPC (month / time / opacity / qrc).
   Process {
     id: nativeWindBridge
-    running: root.useNativeBackend && root.opened && root.rowsLoaded
+    running: root.effectiveNativeBackend && root.opened && root.rowsLoaded
     stdinEnabled: true
     command: ["python3", "-u", "-c",
       "import os,socket,sys\n" +
@@ -64,7 +117,7 @@ Item {
   }
 
   function sendNavWind(cmd) {
-    if (root.useNativeBackend && nativeWindBridge.running) {
+    if (root.effectiveNativeBackend && nativeWindBridge.running) {
       nativeWindBridge.write(cmd + "\n")
     }
   }
@@ -167,18 +220,18 @@ Item {
     root.goBack()
   }
 
-  // Authentic PS3 system Latin fontsets (local OFW 4.76 extraction; falls back to root.fontFamily).
+  // Optional user-supplied PS3 system Latin fontsets (gracefully falls back to root.fontFamily).
   FontLoader {
     id: ps3FontRegular
-    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-R-LATIN.TTF"
+    source: root.modernXmbAssetsDir ? ("file://" + root.modernXmbAssetsDir + "/fonts/SCE-PS3-RD-R-LATIN.TTF") : ""
   }
   FontLoader {
     id: ps3FontRounded
-    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-VR-R-LATIN.TTF"
+    source: root.modernXmbAssetsDir ? ("file://" + root.modernXmbAssetsDir + "/fonts/SCE-PS3-VR-R-LATIN.TTF") : ""
   }
   FontLoader {
     id: ps3FontPop
-    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-SR-R-LATIN.TTF"
+    source: root.modernXmbAssetsDir ? ("file://" + root.modernXmbAssetsDir + "/fonts/SCE-PS3-SR-R-LATIN.TTF") : ""
   }
   property real waveTargetY: 0
   property real waveVelX: 0
@@ -295,7 +348,7 @@ Item {
       id: xmbRawScene
       anchors.fill: parent
       visible: false
-      layer.enabled: panel.visible && !root.useNativeBackend
+      layer.enabled: panel.visible && !root.effectiveNativeBackend
       layer.samples: 4
       layer.smooth: true
       layer.textureSize: Qt.size(Math.max(1, Math.round(width * 0.5)), Math.max(1, Math.round(height * 0.5)))
@@ -342,7 +395,7 @@ Item {
           to: 85
           duration: 113000
           loops: Animation.Infinite
-          running: panel.visible && !root.useNativeBackend
+          running: panel.visible && !root.effectiveNativeBackend
         }
       }
 
@@ -371,7 +424,7 @@ Item {
           to: 64
           duration: 80000
           loops: Animation.Infinite
-          running: panel.visible && !root.useNativeBackend
+          running: panel.visible && !root.effectiveNativeBackend
         }
       }
 
@@ -398,7 +451,7 @@ Item {
       blur: 1.0
       blurMax: 24
       autoPaddingEnabled: false
-      layer.enabled: panel.visible && !root.useNativeBackend
+      layer.enabled: panel.visible && !root.effectiveNativeBackend
       layer.smooth: true
       layer.textureSize: Qt.size(Math.max(1, Math.round(width * 0.25)), Math.max(1, Math.round(height * 0.25)))
     }
@@ -406,7 +459,7 @@ Item {
     // Final FS_COMPOSITE filmic tone-map + glare blend (hidden when native Modern-XMB underlay is active).
     ShaderEffect {
       anchors.fill: parent
-      visible: !root.useNativeBackend
+      visible: !root.effectiveNativeBackend
       opacity: 0.98
       property var sceneTex: xmbRawScene
       property var bloomTex: xmbBloomLayer
@@ -712,17 +765,29 @@ Item {
         width: Math.round(592 * card.hdScale)
         height: Math.round(59 * card.hdScale)
 
-        // Sony 24x24 9-slice tex_indi_bg (8 px top/bottom/left, open on right), scaled from 1080p ref.
+        // Optional user-supplied 24x24 9-slice tex_indi_bg, with pure-QML frosted-glass fallback.
         BorderImage {
+          id: clockBgImage
           width: 592
           height: 59
           transformOrigin: Item.TopLeft
           scale: card.hdScale
-          source: "file:///home/ric/Modern-XMB/assets/ui/tex_indi_bg.png"
+          source: root.modernXmbAssetsDir ? ("file://" + root.modernXmbAssetsDir + "/ui/tex_indi_bg.png") : ""
+          visible: status === BorderImage.Ready
           border { left: 8; top: 8; right: 0; bottom: 8 }
           horizontalTileMode: BorderImage.Stretch
           verticalTileMode: BorderImage.Stretch
           smooth: true
+        }
+
+        Rectangle {
+          anchors.fill: parent
+          anchors.rightMargin: -Math.round(8 * card.hdScale)
+          visible: clockBgImage.status !== BorderImage.Ready
+          radius: Math.round(6 * card.hdScale)
+          color: Qt.rgba(0, 0, 0, 0.08)
+          border.width: Math.max(1, Math.round(1 * card.hdScale))
+          border.color: Qt.rgba(1, 1, 1, 0.35)
         }
 
         property date now: new Date()
@@ -1552,13 +1617,8 @@ Item {
       items[id] = entry
     }
 
-    var qrcPresets = [
-      { id: "stock", label: "Stock OFW Lines", path: "/home/ric/Modern-XMB/assets/qrc/stock_ofw_lines.qrc" },
-      { id: "dblue", label: "Deep Blue Day", path: "/home/ric/Modern-XMB/assets/qrc/dblue_day.qrc" },
-      { id: "black", label: "Midnight Black", path: "/home/ric/Modern-XMB/assets/qrc/black.qrc" },
-      { id: "pro4k", label: "PS3 4K Pro Lines", path: "/home/ric/Modern-XMB/assets/qrc/ps3_4k_pro_lines.qrc" }
-    ]
-    var curQrcLabel = "Custom"
+    var qrcPresets = root.discoveredQrcPresets || []
+    var curQrcLabel = root.effectiveNativeBackend ? "Custom" : "QML Fallback"
     for (var qi = 0; qi < qrcPresets.length; qi++) {
       if (qrcPresets[qi].path === root.nativeBackendQrc) { curQrcLabel = qrcPresets[qi].label; break }
     }
@@ -1659,7 +1719,7 @@ Item {
     addEntry("appearance.xmb.clock.12", { parent: "appearance.xmb.clock", kind: "action", icon: "󰥔", label: (!root.xmbClock24h ? "✓ " : "") + "12-Hour (AM/PM)", action: "xmb:clock24h:false" })
     addEntry("appearance.xmb.clock.24", { parent: "appearance.xmb.clock", kind: "action", icon: "󰥔", label: (root.xmbClock24h ? "✓ " : "") + "24-Hour", action: "xmb:clock24h:true" })
 
-    addEntry("appearance.xmb.renderer", { parent: "appearance.xmb", kind: "menu", icon: "󰍹", label: "Renderer", detail: root.useNativeBackend ? "Modern-XMB (Vulkan)" : "QML Shader Fallback" })
+    addEntry("appearance.xmb.renderer", { parent: "appearance.xmb", kind: "menu", icon: "󰍹", label: "Renderer", detail: root.effectiveNativeBackend ? "Modern-XMB (Vulkan)" : "QML Shader Fallback" })
     addEntry("appearance.xmb.renderer.native", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (root.useNativeBackend ? "✓ " : "") + "Modern-XMB (Vulkan)", action: "xmb:renderer:native" })
     addEntry("appearance.xmb.renderer.qml", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (!root.useNativeBackend ? "✓ " : "") + "QML Shader Fallback", action: "xmb:renderer:qml" })
   }
