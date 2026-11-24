@@ -391,11 +391,14 @@ Item {
       readonly property string xmbFontFamily: root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
-      // Phase-locked to the ribbon's clock (xmbBackground.time): slow ~5.5s zen breath
-      // plus a subtle living light drift that moves with the silk wave.
-      readonly property real glowPulse: 0.5 + 0.5 * Math.sin(xmbBackground.time * 1.15)
-      readonly property real glowDriftX: Math.sin(xmbBackground.time * 0.72) * 3.5 * uiScale
-      readonly property real glowDriftY: Math.cos(xmbBackground.time * 0.54) * 1.8 * uiScale
+      // Sony PAF PhText pulsing glow (vsh.elf 0x38cf50): sinusoidal 1.8s breathe (0.35 <-> 0.95).
+      property real phTextGlowAlpha: 0.35
+      SequentialAnimation on phTextGlowAlpha {
+        running: panel.visible
+        loops: Animation.Infinite
+        NumberAnimation { from: 0.35; to: 0.95; duration: 900; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 0.95; to: 0.35; duration: 900; easing.type: Easing.InOutSine }
+      }
 
       Text {
         anchors.right: parent.right
@@ -826,13 +829,15 @@ Item {
 
               MultiEffect {
                 source: xmbRowIcon
-                anchors.centerIn: xmbRowIcon
+                anchors.fill: xmbRowIcon
                 visible: xmbRow.selected && xmbRow.kind !== "app"
                 autoPaddingEnabled: true
                 blurEnabled: true
-                blur: 0.45 + 0.45 * card.glowPulse
-                blurMax: 28
-                opacity: 0.22 + 0.58 * card.glowPulse
+                blur: 0.65
+                blurMax: 24
+                colorization: 1.0
+                colorizationColor: "#ffffff"
+                opacity: card.phTextGlowAlpha
               }
 
               Text {
@@ -847,7 +852,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 font.family: xmbRow.iconFont.length ? xmbRow.iconFont : card.xmbFontFamily
                 font.pixelSize: xmbRow.selected ? Math.round(44 * card.uiScale) : Math.round(23 * card.uiScale)
-                style: Text.Raised
+                style: xmbRow.selected ? Text.Normal : Text.Raised
                 styleColor: Qt.rgba(0, 0, 0, 0.45)
                 Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
               }
@@ -863,19 +868,19 @@ Item {
                   width: parent.width
                   height: xmbRowLabel.implicitHeight
 
-                  // Single-pass auto-padded bloom (no brightness boost, blurMax <= 32)
-                  // avoids bounding-box clipping, rectangular halos, and mipmap rings.
+                  // Sony PAF PhText "Text(shadow)" glow (vsh.elf 0x38cf50):
+                  // Centered (0,0) behind selected text, tinted pure white, pulsing 0.35 <-> 0.95.
                   MultiEffect {
                     source: xmbRowLabel
-                    anchors.centerIn: xmbRowLabel
-                    anchors.horizontalCenterOffset: card.glowDriftX * 0.35
-                    anchors.verticalCenterOffset: card.glowDriftY * 0.35
+                    anchors.fill: xmbRowLabel
                     visible: xmbRow.selected
                     autoPaddingEnabled: true
                     blurEnabled: true
-                    blur: 0.45 + 0.40 * card.glowPulse
+                    blur: 0.65
                     blurMax: 24
-                    opacity: 0.32 + 0.52 * card.glowPulse
+                    colorization: 1.0
+                    colorizationColor: "#ffffff"
+                    opacity: card.phTextGlowAlpha
                   }
 
                   Text {
@@ -886,7 +891,7 @@ Item {
                     font.family: card.xmbFontFamily
                     font.pixelSize: xmbRow.selected ? Math.round(21.5 * card.uiScale) : Math.round(14.5 * card.uiScale)
                     font.weight: xmbRow.selected ? Font.Normal : Font.Light
-                    style: Text.Raised
+                    style: xmbRow.selected ? Text.Normal : Text.Raised
                     styleColor: Qt.rgba(0, 0, 0, 0.55)
                     elide: Text.ElideRight
                     Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
