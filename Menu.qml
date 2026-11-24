@@ -39,22 +39,27 @@ Item {
     && root.nativeBackendQrc.length > 0
   property real waveTargetX: 0
 
-  // One-shot startup probe to locate modern_xmb binary, asset directory, and available .qrc themes.
+  // One-shot startup probe to locate modern-moyou binary, asset directory, and available .qrc themes.
   Process {
     id: nativeEnvProbe
     running: true
     command: ["python3", "-c",
       "import glob,json,os,shutil\n" +
       "home=os.path.expanduser('~')\n" +
-      "env_dir=os.environ.get('MODERN_XMB_DIR','')\n" +
-      "bin_cands=[os.environ.get('MODERN_XMB_BIN',''),shutil.which('modern_xmb') or ''," +
-      "os.path.join(home,'.local/bin/modern_xmb')," +
-      "(os.path.join(env_dir,'build/modern_xmb') if env_dir else '')," +
+      "env_dir=os.environ.get('MODERN_MOYOU_DIR') or os.environ.get('MODERN_XMB_DIR','')\n" +
+      "bin_cands=[os.environ.get('MODERN_MOYOU_BIN',''),os.environ.get('MODERN_XMB_BIN','')," +
+      "shutil.which('modern-moyou') or '',shutil.which('modern_xmb') or ''," +
+      "os.path.join(home,'.local/bin/modern-moyou')," +
+      "(os.path.join(env_dir,'build/modern-moyou') if env_dir else '')," +
+      "os.path.join(home,'modern-moyou/build/modern-moyou')," +
+      "os.path.join(home,'Modern-XMB/build/modern-moyou')," +
       "os.path.join(home,'Modern-XMB/build/modern_xmb')]\n" +
       "bin_path=next((p for p in bin_cands if p and os.path.isfile(p) and os.access(p,os.X_OK)),'')\n" +
-      "asset_cands=[os.environ.get('MODERN_XMB_ASSETS','')," +
+      "asset_cands=[os.environ.get('MODERN_MOYOU_ASSETS',''),os.environ.get('MODERN_XMB_ASSETS','')," +
+      "os.path.join(home,'.local/share/modern-moyou'),'/usr/share/modern-moyou'," +
       "os.path.join(home,'.local/share/modern-xmb'),'/usr/share/modern-xmb'," +
       "(os.path.join(env_dir,'assets') if env_dir else '')," +
+      "os.path.join(home,'modern-moyou/assets')," +
       "os.path.join(home,'Modern-XMB/assets')]\n" +
       "assets_dir=next((d for d in asset_cands if d and os.path.isdir(d)),'')\n" +
       "qrcs=[]\n" +
@@ -98,7 +103,7 @@ Item {
     ]
   }
 
-  // Zero-fork persistent UNIX datagram bridge for Modern-XMB's 32x16 particle flow-field wind
+  // Zero-fork persistent UNIX datagram bridge for modern-moyou's 32x16 particle flow-field wind
   // and live preview IPC (month / time / opacity / qrc).
   Process {
     id: nativeWindBridge
@@ -106,13 +111,15 @@ Item {
     stdinEnabled: true
     command: ["python3", "-u", "-c",
       "import os,socket,sys\n" +
-      "p=os.path.join(os.environ.get('XDG_RUNTIME_DIR','/tmp'),'modern-xmb-wind.sock')\n" +
+      "base=os.environ.get('XDG_RUNTIME_DIR','/tmp')\n" +
+      "socks=[os.path.join(base,'modern-moyou-wind.sock'),os.path.join(base,'modern-xmb-wind.sock')]\n" +
       "s=socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM)\n" +
       "for line in sys.stdin:\n" +
       "  msg=line.strip().encode()\n" +
       "  if msg:\n" +
-      "    try: s.sendto(msg,p)\n" +
-      "    except OSError: pass\n"
+      "    for p in socks:\n" +
+      "      try: s.sendto(msg,p); break\n" +
+      "      except OSError: pass\n"
     ]
   }
 
@@ -1719,8 +1726,8 @@ Item {
     addEntry("appearance.xmb.clock.12", { parent: "appearance.xmb.clock", kind: "action", icon: "󰥔", label: (!root.xmbClock24h ? "✓ " : "") + "12-Hour (AM/PM)", action: "xmb:clock24h:false" })
     addEntry("appearance.xmb.clock.24", { parent: "appearance.xmb.clock", kind: "action", icon: "󰥔", label: (root.xmbClock24h ? "✓ " : "") + "24-Hour", action: "xmb:clock24h:true" })
 
-    addEntry("appearance.xmb.renderer", { parent: "appearance.xmb", kind: "menu", icon: "󰍹", label: "Renderer", detail: root.effectiveNativeBackend ? "Modern-XMB (Vulkan)" : "QML Shader Fallback" })
-    addEntry("appearance.xmb.renderer.native", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (root.useNativeBackend ? "✓ " : "") + "Modern-XMB (Vulkan)", action: "xmb:renderer:native" })
+    addEntry("appearance.xmb.renderer", { parent: "appearance.xmb", kind: "menu", icon: "󰍹", label: "Renderer", detail: root.effectiveNativeBackend ? "modern-moyou (Vulkan)" : "QML Shader Fallback" })
+    addEntry("appearance.xmb.renderer.native", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (root.useNativeBackend ? "✓ " : "") + "modern-moyou (Vulkan)", action: "xmb:renderer:native" })
     addEntry("appearance.xmb.renderer.qml", { parent: "appearance.xmb.renderer", kind: "action", icon: "󰍹", label: (!root.useNativeBackend ? "✓ " : "") + "QML Shader Fallback", action: "xmb:renderer:qml" })
   }
 
