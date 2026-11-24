@@ -449,19 +449,9 @@ Item {
         : root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
-      // Retain the last snapshot while subT animates 1 -> 0 on exit so parent icons smoothly slide back right.
-      property var activeSubmenuSnapshot: null
-      Connections {
-        target: root
-        function onSubmenuSnapshotStackChanged() {
-          if (root.submenuSnapshotStack.length > 0) {
-            card.activeSubmenuSnapshot = root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
-          }
-        }
-      }
-      readonly property var submenuSnapshot: (root.submenuSnapshotStack.length > 0)
+      readonly property var submenuSnapshot: (inSubmenu && root.submenuSnapshotStack.length > 0)
         ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
-        : (subT > 0.001 ? activeSubmenuSnapshot : null)
+        : null
       // Single continuous firmware-verified submenu collapse factor (explore_plugin: 250 ms):
       // 0 = full Level-1 XMB, 1 = settled Level-2 (cat shifts -257px/-10px, parent -> 316,
       // siblings -> 455 around focal Y with ◀ chevron, children slide in from +250px right).
@@ -777,21 +767,19 @@ Item {
         }
       }
 
-      // Firmware-verified PS3 Level-2 parent collapse layer (driven continuously by card.subT):
-      // - Selected parent item slides left from categoryAnchorCenterX -> submenuParentX (316), shrinking 108 -> 62 px.
-      // - Level-1 siblings morph from their full carousel Y to collapsed 80px pitch at submenuSibX (455).
-      // - Left-pointing ◀ chevron fades in at submenuSibX in the vacated parent slot.
+      // Firmware-verified PS3 Level-2 parent collapse layer (shown while inSubmenu; on exit,
+      // the real Level-1 xmbRow delegates themselves glide back right from subT 1 -> 0 with zero handoff).
       Item {
         id: submenuBreadcrumbLayer
         anchors.fill: parent
-        visible: card.subT > 0.001 && card.submenuSnapshot !== null
+        visible: card.subT > 0.001
         readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
         readonly property real l1RowStep: Math.round(80 * card.hdScale)
         readonly property real l1SelectedH: Math.round(132 * card.hdScale)
         readonly property real l1RowH: Math.round(72 * card.hdScale)
 
         Repeater {
-          model: card.submenuSnapshot ? card.submenuSnapshot.rows : []
+          model: (card.inSubmenu && card.submenuSnapshot) ? card.submenuSnapshot.rows : []
 
           delegate: Item {
             required property var modelData
@@ -918,10 +906,7 @@ Item {
           ? Math.max(420, Style.space(root.dmenuWidth), panel.width * 0.5)
           : Math.max(420, panel.width * 0.34), parent.width - x - (root.dmenuActive ? 32 : 0))
         spacing: 0
-        // During Level-2 exit (subT > 0.001), submenuBreadcrumbLayer renders the entire returning
-        // Level-1 list (icons + fading text) continuously; xmbListColumn hands off seamlessly at subT <= 0.001.
-        visible: (root.activeMenu !== "root" || root.filterText || root.dmenuActive)
-          && (card.inSubmenu || card.subT <= 0.001)
+        visible: root.activeMenu !== "root" || root.filterText || root.dmenuActive
 
         // Child column slides in from +250 px right as subT goes 0 -> 1.
         transform: Translate {
@@ -948,7 +933,7 @@ Item {
           id: xmbResultList
           width: parent.width
           height: parent.height
-          clip: true
+          clip: false
 
           Repeater {
             model: displayModel
@@ -999,8 +984,19 @@ Item {
                 : (index === root.selectedIndex
                   ? selectedY
                   : selectedY + selectedHeight + Math.round(card.inSubmenu ? 18 : 42) * card.hdScale + (index - root.selectedIndex - 1) * rowStep)
-              visible: y + height > 0 && y < xmbResultList.height
-              opacity: baseOpacity * barFade * bottomFade
+              // On Level-2 exit (!inSubmenu while subT animates 1 -> 0), each real Level-1 xmbRow
+              // glides directly from its collapsed breadcrumb/sibling slot back to (0, 0) with zero handoff.
+              readonly property real exitT: (!card.inSubmenu && !root.dmenuActive && !root.filterText) ? card.subT : 0.0
+              readonly property real collapsedCenterY: (card.submenuFocalY + Math.round(66 * card.hdScale)) + (index - root.selectedIndex) * Math.round(80 * card.hdScale)
+              readonly property real exitOffsetX: (selected ? -Math.round(252 * card.hdScale) : -Math.round(113 * card.hdScale)) * exitT
+              readonly property real exitOffsetY: (collapsedCenterY - (y + height * 0.5)) * exitT
+              readonly property real exitSetAlpha: selected ? 0.92 : Math.max(0.12, 0.42 - (rowDist - 1) * 0.05)
+              transform: Translate {
+                x: xmbRow.exitOffsetX
+                y: xmbRow.exitOffsetY
+              }
+              visible: (y + exitOffsetY) + height > 0 && (y + exitOffsetY) < xmbResultList.height
+              opacity: (baseOpacity * barFade * bottomFade) * (1.0 - exitT) + exitSetAlpha * exitT
               Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
               Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
@@ -1009,6 +1005,7 @@ Item {
                 visible: xmbRow.kind === "app"
                 width: xmbRow.selected ? Math.round(116 * card.hdScale) : Math.round(56 * card.hdScale)
                 height: width
+                scale: xmbRow.exitT > 0 ? (xmbRow.selected ? (1.0 + (64.0 / 116.0 - 1.0) * xmbRow.exitT) : (1.0 + (50.0 / 56.0 - 1.0) * xmbRow.exitT)) : 1.0
                 anchors.horizontalCenter: xmbRowIcon.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 fillMode: Image.PreserveAspectFit
@@ -1024,6 +1021,7 @@ Item {
                 width: Math.round(144 * card.hdScale)
                 height: parent.height
                 anchors.left: parent.left
+                scale: xmbRow.exitT > 0 ? (xmbRow.selected ? (1.0 + (62.0 / 108.0 - 1.0) * xmbRow.exitT) : (1.0 + (48.0 / 54.0 - 1.0) * xmbRow.exitT)) : 1.0
                 text: xmbRow.icon || "•"
                 color: Qt.rgba(1, 1, 1, xmbRow.selected ? 0.94 : 0.80)
                 horizontalAlignment: Text.AlignHCenter
@@ -1041,7 +1039,7 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Math.round(2 * card.hdScale)
-                opacity: (xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0
+                opacity: ((xmbRow.selected || !card.navIdle || root.dmenuActive || root.filterText.length > 0) ? 1.0 : 0.0) * (1.0 - xmbRow.exitT)
                 Behavior on opacity { NumberAnimation { duration: card.navIdle ? 450 : 120; easing.type: Easing.OutCubic } }
 
                 Item {
