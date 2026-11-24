@@ -19,6 +19,27 @@ Item {
   // Plugin lifecycle hooks. The host calls open(payloadJson) after
   // `omarchy-shell shell summon omarchy.menu ...` and close() when hidden.
   property string pendingInitialMenu: "root"
+  property real waveTargetX: 0
+  property real waveTargetY: 0
+  property real waveVelX: 0
+  property real waveVelY: 0
+
+  Timer {
+    interval: 16
+    repeat: true
+    running: panel.visible && (Math.abs(root.waveVelX) > 0.0005 || Math.abs(root.waveVelY) > 0.0005 || Math.abs(root.waveTargetX) > 0.0005 || Math.abs(root.waveTargetY) > 0.0005)
+    onTriggered: {
+      // Second-order smooth attack + gentle exponential decay (no 1-frame snap)
+      root.waveVelX += (root.waveTargetX - root.waveVelX) * 0.16
+      root.waveVelY += (root.waveTargetY - root.waveVelY) * 0.16
+      root.waveTargetX *= 0.88
+      root.waveTargetY *= 0.88
+      if (Math.abs(root.waveTargetX) <= 0.0005) root.waveTargetX = 0
+      if (Math.abs(root.waveTargetY) <= 0.0005) root.waveTargetY = 0
+      if (Math.abs(root.waveVelX) <= 0.0005 && root.waveTargetX === 0) root.waveVelX = 0
+      if (Math.abs(root.waveVelY) <= 0.0005 && root.waveTargetY === 0) root.waveVelY = 0
+    }
+  }
 
   function open(payloadJson) {
     var payload = ({})
@@ -50,49 +71,70 @@ Item {
     property int maxRowsHeight: -1
     function freezeCardTop() {}
 
-    Image {
-      id: xmbWaveAtlas
-      source: "shaders/wave_atlas.png"
-      visible: false
-      smooth: false
-      mipmap: false
-    }
+    Image { id: xmbWaveAtlas;   source: "shaders/wave_atlas.png";     visible: false; smooth: false; mipmap: false }
+    Image { id: xmbWaveNormals; source: "shaders/wave_normals.png";   visible: false; smooth: true;  mipmap: false }
+    Image { id: xmbFresLut;     source: "shaders/freslut.png";        visible: false; smooth: true;  mipmap: false }
+    Image { id: xmbNoiseTex;    source: "shaders/noise.png";          visible: false; smooth: true;  mipmap: false }
+    Image { id: xmbCloudTex;    source: "shaders/particle_cloud.png"; visible: false; smooth: false; mipmap: false }
 
-    Image {
-      id: xmbWaveNormals
-      source: "shaders/wave_normals.png"
-      visible: false
-      smooth: true
-      mipmap: false
-    }
-
-    // PS3 XMB deep sky backdrop + wave-hugging twinkling dust motes.
-    ShaderEffect {
-      id: xmbBackground
-      anchors.fill: parent
-      opacity: 0.98
-      property color topColor: Qt.rgba(0.032, 0.115, 0.255, 1.0)
-      property color bottomColor: Qt.rgba(0.008, 0.025, 0.070, 1.0)
-      property vector2d resolution: Qt.vector2d(width, height)
-      property real time: 0
-      fragmentShader: "shaders/ps3_bg.frag.qsb"
-
-      NumberAnimation on time {
-        from: 0
-        to: 1000
-        duration: 1000000
-        loops: Animation.Infinite
-        running: panel.visible
-      }
-    }
-
-    // 4x MSAA firmware-exact PS3 SPU captured cloth (64 Catmull-Rom keyframes + FS_WAVECAP).
+    // Offscreen 4x MSAA scene: sky + PS3 SPU cloth + 3D eye-space particle cloud.
     Item {
+      id: xmbRawScene
       anchors.fill: parent
+      visible: false
       layer.enabled: true
       layer.samples: 4
       layer.smooth: true
 
+      ShaderEffect {
+        id: xmbBackground
+        anchors.fill: parent
+        property color topColor: Qt.rgba(0.032, 0.115, 0.255, 1.0)
+        property color bottomColor: Qt.rgba(0.008, 0.025, 0.070, 1.0)
+        property vector2d resolution: Qt.vector2d(width, height)
+        property real time: 0
+        fragmentShader: "shaders/ps3_bg.frag.qsb"
+
+        NumberAnimation on time {
+          from: 0
+          to: 1000
+          duration: 1000000
+          loops: Animation.Infinite
+          running: panel.visible
+        }
+      }
+
+      // Companion PS3 SPU cloth strip (incommensurate 113s period for multi-pass
+      // lines.qrc depth and non-repeating ~2.5-hour interference motion).
+      ShaderEffect {
+        anchors.fill: parent
+        blending: true
+        mesh: GridMesh { resolution: Qt.size(127, 127) }
+        property var atlas: xmbWaveAtlas
+        property var normalMap: xmbWaveNormals
+        property var fresLut: xmbFresLut
+        property var noiseTex: xmbNoiseTex
+        property color tint: Qt.rgba(0.76, 0.87, 1.0, 1.0)
+        property vector2d resolution: Qt.vector2d(width, height)
+        property real framePhase: 21
+        property real alpha: 0.11
+        property real scaleY: 0.96
+        property real waveVelX: root.waveVelX * 0.7
+        property real waveVelY: root.waveVelY * 0.7
+        vertexShader: "shaders/ps3_cap.vert.qsb"
+        fragmentShader: "shaders/ps3_cap.frag.qsb"
+
+        NumberAnimation on framePhase {
+          from: 21
+          to: 85
+          duration: 113000
+          loops: Animation.Infinite
+          running: panel.visible
+        }
+      }
+
+      // Primary PS3 SPU cloth ribbon: dynamic per-frame normals, chromatic Fresnel
+      // LUT, baked RSX noise.png lace, and nav-reactive impulse swells.
       ShaderEffect {
         id: xmbCapturedWave
         anchors.fill: parent
@@ -100,11 +142,15 @@ Item {
         mesh: GridMesh { resolution: Qt.size(127, 127) }
         property var atlas: xmbWaveAtlas
         property var normalMap: xmbWaveNormals
-        property color tint: Qt.rgba(0.84, 0.92, 1.0, 1.0)
+        property var fresLut: xmbFresLut
+        property var noiseTex: xmbNoiseTex
+        property color tint: Qt.rgba(0.88, 0.94, 1.0, 1.0)
         property vector2d resolution: Qt.vector2d(width, height)
         property real framePhase: 0
-        property real alpha: 0.20
-        property real scaleY: 0.85
+        property real alpha: 0.17
+        property real scaleY: 0.84
+        property real waveVelX: root.waveVelX
+        property real waveVelY: root.waveVelY
         vertexShader: "shaders/ps3_cap.vert.qsb"
         fragmentShader: "shaders/ps3_cap.frag.qsb"
 
@@ -116,6 +162,42 @@ Item {
           running: panel.visible
         }
       }
+
+      // RPCS3 draw-36 3D eye-space particle cloud (perspective bokeh + diffraction glints).
+      ShaderEffect {
+        anchors.fill: parent
+        blending: true
+        property var cloudTex: xmbCloudTex
+        property vector2d resolution: Qt.vector2d(width, height)
+        property real time: xmbBackground.time
+        property real waveVelX: root.waveVelX
+        fragmentShader: "shaders/ps3_particles.frag.qsb"
+      }
+    }
+
+    // Multi-pass HDR glare bloom layer (autoPaddingEnabled: false prevents edge borders).
+    MultiEffect {
+      id: xmbBloomLayer
+      source: xmbRawScene
+      anchors.fill: parent
+      visible: false
+      blurEnabled: true
+      blur: 1.0
+      blurMax: 48
+      autoPaddingEnabled: false
+      layer.enabled: true
+      layer.smooth: true
+    }
+
+    // Final FS_COMPOSITE filmic tone-map + glare blend + anti-banding dither.
+    ShaderEffect {
+      anchors.fill: parent
+      opacity: 0.98
+      property var sceneTex: xmbRawScene
+      property var bloomTex: xmbBloomLayer
+      property real bloomStrength: 0.85
+      property real time: xmbBackground.time
+      fragmentShader: "shaders/ps3_composite.frag.qsb"
     }
 
     MouseArea {
@@ -982,6 +1064,7 @@ Item {
     var nextIndex = Math.max(0, Math.min(categoryModel.count - 1, root.categoryIndex + delta))
     if (nextIndex === root.categoryIndex) return
     root.categoryIndex = nextIndex
+    root.waveTargetX = Math.max(-0.10, Math.min(0.10, root.waveTargetX + (delta > 0 ? 0.06 : -0.06)))
     if (!root.filterText) root.previewCategory(false)
   }
 
@@ -1398,6 +1481,7 @@ Item {
       // remainder may be negative, so normalize it before using it as an index.
       selectedIndex = ((selectedIndex + delta) % displayModel.count + displayModel.count) % displayModel.count
     }
+    root.waveTargetY = Math.max(-0.08, Math.min(0.08, root.waveTargetY + (delta > 0 ? -0.045 : 0.045)))
   }
 
   function setFilter(nextFilter) {
