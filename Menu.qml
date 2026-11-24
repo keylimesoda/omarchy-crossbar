@@ -449,6 +449,14 @@ Item {
         : root.fontFamily
       readonly property bool inSubmenu: !root.dmenuActive && !root.filterText && root.navStack.length > 0
       readonly property var submenuParentItem: inSubmenu ? root.item(root.activeMenu) : null
+      readonly property var submenuSnapshot: (inSubmenu && root.submenuSnapshotStack.length > 0)
+        ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
+        : null
+      // Authentic 3-column PS3 Level-2 drilldown axes (1080p-referenced):
+      // [far-left: shifted category + parent icon]  [middle: collapsed siblings + ◀]  [right: active L2 list]
+      readonly property real submenuParentX: Math.max(Math.round(72 * hdScale), categoryAnchorCenterX - Math.round(220 * hdScale))
+      readonly property real submenuArrowX: submenuParentX + Math.round(126 * hdScale)
+      readonly property real submenuFocalY: Math.round(410 * hdScale)
       // Sony PAF PhText pulsing glow (vsh.elf 0x38cf50): sinusoidal 1.8s breathe (0.35 <-> 0.95).
       property real phTextGlowAlpha: 0.35
       SequentialAnimation on phTextGlowAlpha {
@@ -618,12 +626,11 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: Math.round(238 * card.hdScale)
+        anchors.topMargin: card.inSubmenu ? Math.round(146 * card.hdScale) : Math.round(238 * card.hdScale)
+        Behavior on anchors.topMargin { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
         height: Math.round(134 * card.hdScale)
         clip: false
         visible: !root.dmenuActive
-        opacity: card.inSubmenu ? 0.30 : 1.0
-        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         readonly property real delegateWidth: Math.round(170 * card.hdScale)
         readonly property real categoryStep: Math.round(192 * card.hdScale)
         // Exact PS3 1080p column axis (~568 px from screen left = 29.6% of 1920).
@@ -649,13 +656,14 @@ Item {
             readonly property bool selected: distance === 0
             width: categoryList.delegateWidth
             height: categoryList.height
-            x: categoryList.selectedCenterX
-              + (index - root.categoryIndex) * categoryList.categoryStep
-              - width / 2
+            x: (card.inSubmenu && selected)
+              ? (card.submenuParentX - width / 2)
+              : (categoryList.selectedCenterX + (index - root.categoryIndex) * categoryList.categoryStep - width / 2)
             z: selected ? 2 : 1
-            scale: selected ? 1.45 : 1.0
-            opacity: selected ? 1.0 : 0.55
-            visible: x + width > -categoryList.categoryStep
+            scale: selected ? (card.inSubmenu ? 1.08 : 1.45) : 1.0
+            opacity: card.inSubmenu ? (selected ? 0.48 : 0.0) : (selected ? 1.0 : 0.55)
+            visible: (!card.inSubmenu || selected)
+              && x + width > -categoryList.categoryStep
               && x < categoryList.width + categoryList.categoryStep
 
             Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
@@ -747,48 +755,110 @@ Item {
         }
       }
 
-      // PS3 submenu parent ghost + breadcrumb arrow (slides in when diving into a submenu)
-      Row {
-        id: submenuBreadcrumb
-        visible: card.inSubmenu
-        opacity: card.inSubmenu ? 0.56 : 0.0
-        x: Math.max(0, card.categoryAnchorCenterX - Math.round(84 * card.hdScale))
-        y: categoryList.y + categoryList.height + Math.round(72 * card.hdScale)
-        height: Math.round(132 * card.hdScale)
-        spacing: Math.round(12 * card.hdScale)
-        Behavior on opacity { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+      // Authentic PS3 Level-2 drilldown left & middle columns:
+      // - Far-left (submenuParentX): entered parent item icon directly under the shifted category.
+      // - Middle (submenuArrowX): crisp white ◀ back arrow at focal Y, with dimmed icon-only
+      //   Level-1 siblings collapsed tightly above and below ◀.
+      Item {
+        id: submenuBreadcrumbLayer
+        anchors.fill: parent
+        visible: opacity > 0.01
+        opacity: card.inSubmenu ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        readonly property real focalCenterY: card.submenuFocalY + Math.round(66 * card.hdScale)
 
-        Text {
-          anchors.verticalCenter: parent.verticalCenter
-          text: (card.submenuParentItem && card.submenuParentItem.icon) || "•"
-          color: "white"
-          font.family: (card.submenuParentItem && card.submenuParentItem.iconFont) || card.xmbFontFamily
-          font.pixelSize: Math.round(52 * card.hdScale)
-          style: Text.Raised
-          styleColor: Qt.rgba(0, 0, 0, 0.5)
+        // Far-left: entered parent item icon (aligned under shifted active category)
+        Item {
+          x: card.submenuParentX - width / 2
+          y: submenuBreadcrumbLayer.focalCenterY - height / 2
+          width: Math.round(72 * card.hdScale)
+          height: Math.round(72 * card.hdScale)
+
+          Text {
+            anchors.centerIn: parent
+            text: (card.submenuParentItem && card.submenuParentItem.icon) || "•"
+            color: Qt.rgba(1, 1, 1, 0.72)
+            font.family: (card.submenuParentItem && card.submenuParentItem.iconFont) || card.xmbFontFamily
+            font.pixelSize: Math.round(54 * card.hdScale)
+            style: Text.Raised
+            styleColor: Qt.rgba(0, 0, 0, 0.45)
+          }
+
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.goBack()
+          }
         }
 
+        // Middle: collapsed icon-only Level-1 siblings stacked tightly above/below ◀
+        Repeater {
+          model: card.submenuSnapshot ? card.submenuSnapshot.rows : []
+
+          delegate: Item {
+            required property var modelData
+            required property int index
+            readonly property int selIdx: card.submenuSnapshot ? card.submenuSnapshot.selectedIndex : 0
+            readonly property int delta: index - selIdx
+            readonly property int dist: Math.abs(delta)
+            visible: delta !== 0 && dist <= 4
+            width: Math.round(64 * card.hdScale)
+            height: Math.round(64 * card.hdScale)
+            x: card.submenuArrowX - width / 2
+            y: submenuBreadcrumbLayer.focalCenterY + delta * Math.round(72 * card.hdScale) - height / 2
+            opacity: Math.max(0.0, 0.42 - (dist - 1) * 0.09)
+
+            Image {
+              visible: modelData.kind === "app"
+              anchors.centerIn: parent
+              width: Math.round(44 * card.hdScale)
+              height: width
+              fillMode: Image.PreserveAspectFit
+              sourceSize.width: width * Screen.devicePixelRatio
+              sourceSize.height: height * Screen.devicePixelRatio
+              source: visible && root.appLibrary ? root.appLibrary.iconSource(modelData.appIcon) : ""
+              asynchronous: true
+            }
+
+            Text {
+              visible: modelData.kind !== "app"
+              anchors.centerIn: parent
+              text: modelData.icon || "•"
+              color: "white"
+              font.family: (modelData.iconFont && modelData.iconFont.length) ? modelData.iconFont : card.xmbFontFamily
+              font.pixelSize: Math.round(46 * card.hdScale)
+              style: Text.Raised
+              styleColor: Qt.rgba(0, 0, 0, 0.40)
+            }
+          }
+        }
+
+        // Middle focal slot: crisp white left-pointing ◀ back indicator
         Text {
-          anchors.verticalCenter: parent.verticalCenter
-          text: "▸"
-          color: Qt.rgba(1, 1, 1, 0.72)
+          x: card.submenuArrowX - width / 2
+          y: submenuBreadcrumbLayer.focalCenterY - height / 2
+          text: "◀"
+          color: Qt.rgba(1, 1, 1, 0.94)
           font.family: card.xmbFontFamily
-          font.pixelSize: Math.round(24 * card.hdScale)
+          font.pixelSize: Math.round(28 * card.hdScale)
           style: Text.Raised
-          styleColor: Qt.rgba(0, 0, 0, 0.5)
-        }
+          styleColor: Qt.rgba(0, 0, 0, 0.45)
 
-        MouseArea {
-          anchors.fill: parent
-          cursorShape: Qt.PointingHandCursor
-          onClicked: root.goBack()
+          MouseArea {
+            anchors.fill: parent
+            anchors.margins: -Math.round(14 * card.hdScale)
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.goBack()
+          }
         }
       }
 
       Column {
         anchors.left: parent.left
-        anchors.leftMargin: Math.max(0, card.categoryAnchorCenterX - Math.round(72 * card.hdScale) + (card.inSubmenu ? Math.round(86 * card.hdScale) : 0))
-        Behavior on anchors.leftMargin { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+        anchors.leftMargin: card.inSubmenu
+          ? Math.max(0, card.submenuArrowX + Math.round(54 * card.hdScale))
+          : Math.max(0, card.categoryAnchorCenterX - Math.round(72 * card.hdScale))
+        Behavior on anchors.leftMargin { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: Math.min(root.dmenuActive
@@ -839,7 +909,9 @@ Item {
 
               readonly property bool selected: root.cursorActive && index === root.selectedIndex
               readonly property int rowDist: Math.abs(index - root.selectedIndex)
-              readonly property real selectedY: categoryList.y + categoryList.height + Math.round(72 * card.hdScale)
+              readonly property real selectedY: card.inSubmenu
+                ? card.submenuFocalY
+                : (categoryList.y + categoryList.height + Math.round(72 * card.hdScale))
               // Keybinding labels contain a padded shortcut, an arrow and its
               // description. Split only their presentation: callers still receive
               // the original label verbatim when the row is selected.
@@ -855,18 +927,19 @@ Item {
               readonly property real rowStep: root.dmenuActive ? Math.round(104 * card.hdScale) : Math.round(80 * card.hdScale)
               readonly property real baseOpacity: selected ? 1.0 : Math.max(0.0, 0.78 - rowDist * 0.12)
               readonly property real rowCenterY: y + height * 0.5
-              readonly property real barFade: (!root.dmenuActive && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
-              readonly property real topFade: Math.min(1.0, Math.max(0.0, y / Math.round(64 * card.hdScale)))
+              readonly property real barFade: (!root.dmenuActive && !card.inSubmenu && rowCenterY > categoryList.y && rowCenterY < categoryList.y + categoryList.height) ? 0.15 : 1.0
               readonly property real bottomFade: Math.min(1.0, Math.max(0.0, (xmbResultList.height - (y + height)) / Math.round(90 * card.hdScale)))
               width: xmbResultList.width
               height: selected ? selectedHeight : (root.dmenuActive ? Math.round(92 * card.hdScale) : Math.round(72 * card.hdScale))
               y: index < root.selectedIndex
-                ? categoryList.y - Math.round(44 * card.hdScale) - (root.selectedIndex - index) * rowStep
+                ? (card.inSubmenu
+                  ? (selectedY - Math.round(12 * card.hdScale) - (root.selectedIndex - index) * rowStep)
+                  : (categoryList.y - Math.round(44 * card.hdScale) - (root.selectedIndex - index) * rowStep))
                 : (index === root.selectedIndex
                   ? selectedY
-                  : selectedY + selectedHeight + Math.round(42 * card.hdScale) + (index - root.selectedIndex - 1) * rowStep)
+                  : selectedY + selectedHeight + Math.round(card.inSubmenu ? 18 : 42) * card.hdScale + (index - root.selectedIndex - 1) * rowStep)
               visible: y + height > 0 && y < xmbResultList.height
-              opacity: baseOpacity * barFade * topFade * bottomFade
+              opacity: baseOpacity * barFade * bottomFade
               Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutQuart } }
               Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
@@ -1023,6 +1096,7 @@ Item {
   property var items: ({})
   property var itemOrder: []
   property var navStack: []
+  property var submenuSnapshotStack: []
   property var providersLoaded: ({})
   property var providerQueue: []
   property int providerRevision: 0
@@ -1276,6 +1350,7 @@ Item {
     if (category.kind === "action") {
       root.activeMenu = "root"
       root.navStack = []
+      root.submenuSnapshotStack = []
       root.selectedIndex = 0
       root.cursorActive = false
       root.rebuildDisplay()
@@ -1686,7 +1761,23 @@ Item {
   function setActiveMenu(id, pushHistory, fromPointer) {
     panel.freezeCardTop()
     if (!root.item(id)) id = "root"
-    if (pushHistory && id !== root.activeMenu) root.navStack = root.navStack.concat([root.activeMenu])
+    if (pushHistory && id !== root.activeMenu) {
+      var snapRows = []
+      for (var s = 0; s < displayModel.count; s++) {
+        var r = displayModel.get(s)
+        snapRows.push({
+          icon: r.icon || "",
+          iconFont: r.iconFont || "",
+          kind: r.kind || "",
+          appIcon: r.appIcon || ""
+        })
+      }
+      root.submenuSnapshotStack = root.submenuSnapshotStack.concat([{
+        rows: snapRows,
+        selectedIndex: root.selectedIndex
+      }])
+      root.navStack = root.navStack.concat([root.activeMenu])
+    }
     root.activeMenu = id
     root.syncCategoryToMenu()
     root.filterText = ""
@@ -1702,8 +1793,15 @@ Item {
 
     if (root.navStack.length > 0) {
       var previous = root.navStack[root.navStack.length - 1]
+      var prevSnap = root.submenuSnapshotStack.length > 0
+        ? root.submenuSnapshotStack[root.submenuSnapshotStack.length - 1]
+        : null
       root.navStack = root.navStack.slice(0, root.navStack.length - 1)
+      root.submenuSnapshotStack = root.submenuSnapshotStack.slice(0, Math.max(0, root.submenuSnapshotStack.length - 1))
       root.setActiveMenu(previous, false)
+      if (prevSnap && prevSnap.selectedIndex >= 0 && prevSnap.selectedIndex < displayModel.count) {
+        root.selectedIndex = prevSnap.selectedIndex
+      }
       return true
     }
 
@@ -1829,6 +1927,7 @@ Item {
     doneFile = ""
     activeMenu = root.item(initialMenu) ? initialMenu : "root"
     navStack = []
+    submenuSnapshotStack = []
     filterText = ""
     selectedIndex = 0
     cursorActive = true
@@ -1862,6 +1961,7 @@ Item {
     dmenuMaxHeight = Math.max(0, Number(payload.maxHeight || 0))
     activeMenu = "root"
     navStack = []
+    submenuSnapshotStack = []
     filterText = ""
     selectedIndex = 0
     cursorActive = mode !== "input"
