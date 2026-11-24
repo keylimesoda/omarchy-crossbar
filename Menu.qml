@@ -32,18 +32,11 @@ Item {
     command: [root.nativeBackendBin, "--layer-shell", "--opacity", String(root.nativeBackendOpacity), root.nativeBackendQrc]
   }
 
-  // Authentic PS3 SCE-PS3 Rodin UI fonts (local OFW 4.76 extraction; falls back to root.fontFamily).
+  // Authentic PS3 system Latin fontset (vsh.elf PhFont::SetStyle opens only SCE-PS3-RD-R-LATIN.TTF,
+  // tagged DemiBold 600 in OS/2; falls back to root.fontFamily if absent).
   FontLoader {
     id: ps3FontRegular
     source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-R-LATIN.TTF"
-  }
-  FontLoader {
-    id: ps3FontLight
-    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-L-LATIN.TTF"
-  }
-  FontLoader {
-    id: ps3FontBold
-    source: "file:///home/ric/Modern-XMB/assets/fonts/SCE-PS3-RD-B-LATIN.TTF"
   }
   property real waveTargetY: 0
   property real waveVelX: 0
@@ -498,16 +491,31 @@ Item {
           anchors.verticalCenter: parent.verticalCenter
           spacing: Math.round(12 * card.hdScale)
 
-          Text {
+          Item {
             anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: Math.round(-0.5 * card.hdScale)
-            text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
-            color: "white"
-            font.family: card.xmbFontFamily
-            font.pixelSize: Math.round(25 * card.hdScale)
-            font.weight: Font.Bold
-            style: Text.Raised
-            styleColor: Qt.rgba(0, 0, 0, 0.55)
+            width: clockText.implicitWidth
+            height: clockText.implicitHeight
+
+            // Exact clock shadow from xmb_plugin_normal.rco @ 0x1130: offset (+4, +5) px, alpha 0.25.
+            Text {
+              id: clockText
+              visible: false
+              text: Qt.formatDateTime(xmbClockBox.now, "M/d h:mm AP")
+              color: "white"
+              font.family: card.xmbFontFamily
+              font.pixelSize: Math.round(26 * card.hdScale)
+            }
+
+            MultiEffect {
+              source: clockText
+              anchors.fill: clockText
+              autoPaddingEnabled: true
+              shadowEnabled: true
+              shadowColor: Qt.rgba(0, 0, 0, 0.25)
+              shadowBlur: 0.25
+              shadowHorizontalOffset: Math.round(4 * card.hdScale)
+              shadowVerticalOffset: Math.round(5 * card.hdScale)
+            }
           }
 
           Item {
@@ -643,10 +651,9 @@ Item {
               opacity: category.selected ? 1.0 : 0.0
               Behavior on opacity { NumberAnimation { duration: 150 } }
               font.family: card.xmbFontFamily
-              font.pixelSize: Math.round(21 * card.hdScale)
-              font.weight: Font.Bold
+              font.pixelSize: Math.round(23 * card.hdScale)
               style: Text.Raised
-              styleColor: Qt.rgba(0, 0, 0, 0.55)
+              styleColor: Qt.rgba(0, 0, 0, 0.25)
             }
 
             MouseArea {
@@ -908,10 +915,9 @@ Item {
                     text: xmbRow.displayLabel
                     color: "white"
                     font.family: card.xmbFontFamily
-                    font.pixelSize: xmbRow.selected ? Math.round(37 * card.hdScale) : Math.round(24 * card.hdScale)
-                    font.weight: xmbRow.selected ? Font.Bold : Font.Normal
+                    font.pixelSize: xmbRow.selected ? Math.round(34 * card.hdScale) : Math.round(24 * card.hdScale)
                     style: xmbRow.selected ? Text.Normal : Text.Raised
-                    styleColor: Qt.rgba(0, 0, 0, 0.55)
+                    styleColor: Qt.rgba(0, 0, 0, 0.25)
                     elide: Text.ElideRight
                     Behavior on font.pixelSize { NumberAnimation { duration: 120 } }
                   }
@@ -921,12 +927,11 @@ Item {
                   width: parent.width
                   visible: (xmbRow.selected && xmbRow.subtitleText.length > 0) || ((root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0)
                   text: (root.filterText || root.dmenuActive) && xmbRow.displayDetail.length > 0 ? xmbRow.displayDetail : xmbRow.subtitleText
-                  color: xmbRow.selected ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.62)
+                  color: xmbRow.selected ? Qt.rgba(1, 1, 1, 0.88) : Qt.rgba(1, 1, 1, 0.62)
                   font.family: card.xmbFontFamily
-                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(22 * card.hdScale) : Math.round(18 * card.hdScale)) : Math.round(20 * card.hdScale)
-                  font.weight: Font.Light
+                  font.pixelSize: root.dmenuActive ? (xmbRow.selected ? Math.round(22 * card.hdScale) : Math.round(18 * card.hdScale)) : Math.round(21 * card.hdScale)
                   style: Text.Raised
-                  styleColor: Qt.rgba(0, 0, 0, 0.55)
+                  styleColor: Qt.rgba(0, 0, 0, 0.25)
                   wrapMode: root.dmenuActive && xmbRow.selected ? Text.WordWrap : Text.NoWrap
                   maximumLineCount: root.dmenuActive && xmbRow.selected ? 3 : 1
                   elide: Text.ElideRight
