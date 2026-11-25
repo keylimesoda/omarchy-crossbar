@@ -4,6 +4,8 @@
 
 A PS3-authentic XrossMediaBar (XMB) interface for Omarchy's main menu (`SUPER + SPACE`), forked from [surfacedP/omarchy-xmb-menu](https://github.com/surfacedP/omarchy-xmb-menu). Preserves the full Omarchy menu tree, application launcher, providers, global search, and bar widget while upgrading the presentation to firmware-faithful 1080p/4K proportions, 2-beat multi-level drilldowns, pulsing `PhText` selection glow, a TV-safe-zone clock bar, and optional live integration with the native Vulkan [modern-moyou](https://github.com/keylimesoda/modern-moyou) ribbon & bokeh particle engine.
 
+https://github.com/user-attachments/assets/f8db8f96-6ca9-4dcd-9c3e-62ebc8088720
+
 ![Crossbar preview](preview.png)
 
 ## What you get
