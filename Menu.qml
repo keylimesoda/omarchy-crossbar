@@ -70,6 +70,7 @@ Item {
       "  '/usr/share/modern-moyou/themes/*.json',\n" +
       "  os.path.join(home,'modern-moyou/themes/*.json'),\n" +
       "  os.path.join(home,'Modern-XMB/themes/*.json'),\n" +
+      "  os.path.join(assets_dir,'themes','*.json') if assets_dir else '',\n" +
       "  os.path.join(assets_dir,'qrc','*.qrc') if assets_dir else '',\n" +
       "]\n" +
       "seen=set(); themes=[]\n" +
