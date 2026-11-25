@@ -1702,9 +1702,14 @@ Item {
     addEntry("appearance.xmb.qrc", { parent: "appearance.xmb", kind: "menu", icon: "󰸉", label: "Theme / Wave", detail: curQrcLabel })
     for (var q = 0; q < qrcPresets.length; q++) {
       var qp = qrcPresets[q]
+      var isJson = qp.path && qp.path.slice(-5) === ".json"
+      var isQrc = qp.path && qp.path.slice(-4) === ".qrc"
+      var themeIcon = isJson ? "󰘦" : (isQrc ? "󰏗" : "󰸉")
+      var themeDetail = isJson ? "JSON Theme" : (isQrc ? "QRC Archive" : "Procedural")
       addEntry("appearance.xmb.qrc." + qp.id, {
-        parent: "appearance.xmb.qrc", kind: "action", icon: "󰸉",
+        parent: "appearance.xmb.qrc", kind: "action", icon: themeIcon,
         label: (qp.path === root.nativeBackendQrc ? "✓ " : "") + qp.label,
+        detail: themeDetail,
         action: "xmb:qrc:" + qp.path
       })
     }
