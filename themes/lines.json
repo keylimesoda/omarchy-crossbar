@@ -1,0 +1,805 @@
+{
+  "schema": "modern-moyou-theme/v1",
+  "name": "Stock OFW Lines (Ported)",
+  "sky": {
+    "months": [
+      {
+        "dawn":  ["#e0e0e0", "#b7b7b7", "#b3b3b3", "#c6c6c6", "#d7d7d7"],
+        "day":   ["#dedede", "#bbbbbb", "#bababa", "#c9c9c9", "#d6d6d6"],
+        "dusk":  ["#d8d8d8", "#c0c0c0", "#c6c6c6", "#cdcdcd", "#d0d1d1"],
+        "night": ["#b5b5b5", "#8a8a8a", "#525252", "#282828", "#161616"]
+      },
+      {
+        "dawn":  ["#cfb41b", "#cba10d", "#cda80e", "#d4bf1a", "#d6db2a"],
+        "day":   ["#cfb11a", "#cb9e0d", "#cda30e", "#d5bc19", "#d7d829"],
+        "dusk":  ["#d3bb21", "#d3b017", "#d5b418", "#d9c520", "#d8db2e"],
+        "night": ["#c9c391", "#8e8656", "#555032", "#2a291a", "#16160e"]
+      },
+      {
+        "dawn":  ["#84c326", "#75b321", "#6da51c", "#72a61a", "#7aae18"],
+        "day":   ["#91c22c", "#7db423", "#6ca919", "#6db018", "#7abc18"],
+        "dusk":  ["#98bd26", "#89b825", "#77b61a", "#71b818", "#73b516"],
+        "night": ["#9eb079", "#768358", "#464d33", "#23261a", "#12140e"]
+      },
+      {
+        "dawn":  ["#df859a", "#e07994", "#e26b8d", "#e55d85", "#e6517e"],
+        "day":   ["#dd93a2", "#de8b9e", "#df7e98", "#e16c8b", "#e26182"],
+        "dusk":  ["#dca0a9", "#dc9ea9", "#dd93a4", "#de7f96", "#de6b85"],
+        "night": ["#c9a6ad", "#a4868c", "#6c575b", "#3a2f31", "#100f0f"]
+      },
+      {
+        "dawn":  ["#147614", "#147614", "#147614", "#147814", "#147914"],
+        "day":   ["#168516", "#168516", "#168516", "#168516", "#168616"],
+        "dusk":  ["#179217", "#179217", "#179117", "#179017", "#179017"],
+        "night": ["#2c702c", "#204c20", "#1a2f1a", "#162516", "#0e1a0e"]
+      },
+      {
+        "dawn":  ["#a65db7", "#9a5db6", "#8a5db6", "#7f5cb6", "#7459b6"],
+        "day":   ["#b96ad6", "#ab69d4", "#9b65d2", "#8b60d0", "#7f5ccf"],
+        "dusk":  ["#c176da", "#b671da", "#a36ad9", "#9264d9", "#845dd9"],
+        "night": ["#ce9fda", "#9b7aa9", "#594966", "#292330", "#09090a"]
+      },
+      {
+        "dawn":  ["#00b69b", "#00b8a5", "#00bdb3", "#01c0bd", "#01c3c7"],
+        "day":   ["#00c6af", "#01c9b8", "#02cdc3", "#03d0cd", "#04d3d6"],
+        "dusk":  ["#01d4c2", "#03d7c9", "#05dad2", "#08ddd9", "#0ae0de"],
+        "night": ["#087671", "#0f5653", "#123635", "#122121", "#111313"]
+      },
+      {
+        "dawn":  ["#000a5b", "#022281", "#1153ae", "#1f80c6", "#31a7d6"],
+        "day":   ["#0a227e", "#063a8c", "#0a68bb", "#188dcb", "#29abd6"],
+        "dusk":  ["#0c3c9c", "#075ca7", "#0b80bc", "#0fa0d6", "#20b7dc"],
+        "night": ["#2f8b9e", "#016081", "#003361", "#001546", "#00073c"]
+      },
+      {
+        "dawn":  ["#b94dc3", "#bc4cc5", "#c04ecc", "#c655d6", "#ca59dd"],
+        "day":   ["#ab3bb0", "#ac3db4", "#b242bd", "#bc4aca", "#c151d3"],
+        "dusk":  ["#9938a2", "#a03aab", "#ab3cba", "#b341c4", "#b947cc"],
+        "night": ["#570072", "#4f0064", "#3d004a", "#2f0037", "#2d0032"]
+      },
+      {
+        "dawn":  ["#e1ab11", "#e1a60c", "#e1a807", "#e2af03", "#dcbb00"],
+        "day":   ["#e1a20e", "#e1a30c", "#e1a308", "#e2a706", "#e1b404"],
+        "dusk":  ["#e29a08", "#e19f0a", "#e2a10a", "#e2a90a", "#e1b308"],
+        "night": ["#d88f00", "#9f6800", "#573500", "#241100", "#050000"]
+      },
+      {
+        "dawn":  ["#774a18", "#7b4f19", "#865c20", "#926b29", "#98742e"],
+        "day":   ["#774a18", "#7b4f19", "#865c20", "#926b29", "#98742e"],
+        "dusk":  ["#774a18", "#7b4f19", "#865c20", "#926b29", "#98742e"],
+        "night": ["#7f5525", "#674419", "#4b3618", "#2e2516", "#111110"]
+      },
+      {
+        "dawn":  ["#df422c", "#de412b", "#dc402b", "#dc402b", "#db3f2b"],
+        "day":   ["#e5432e", "#e4442d", "#e3412c", "#e3412c", "#e4422d"],
+        "dusk":  ["#e7422c", "#e7422c", "#e6422c", "#e6422c", "#e6422c"],
+        "night": ["#8f3326", "#582720", "#2d1815", "#16100f", "#0e0d0d"]
+      }
+    ]
+  },
+  "background": {
+    "color1": [1, 1, 1],
+    "color2": [1, 1, 1],
+    "color3": [0.847347, 0.846155, 0.846448],
+    "color4": [0.92487, 0.922603, 0.922933],
+    "fovy": 71.846,
+    "colour_shader": 0,
+    "night_blend": 0,
+    "night2day_begin": 0,
+    "night2day_end": 5.166,
+    "day2night_begin": 18.498,
+    "day2night_end": 20.331,
+    "dayspread": 2.68,
+    "night_white_bias": 0.486,
+    "neutrinos_x": 0
+  },
+  "line1": {
+    "state": 1,
+    "shader": 1,
+    "damping": 0.0001,
+    "length": 0.306001,
+    "tension": 0.25,
+    "spacing": 407.658,
+    "thinness": 1,
+    "brightness": 0.701917,
+    "mipmap_bias": 1.86707,
+    "fresnel": 0.638971,
+    "falloff": 1.00318,
+    "timestep": 4,
+    "perturbation": 0.0998587,
+    "pos": [-7.67933, -1.08844, -6.40287],
+    "ang": [-0.994157, 0.0867576, 0.065364],
+    "ang_rot": 18.1208,
+    "end": [3, 0.4, 0.2],
+    "ffd_scale1": [5.67726, 1.00077, 1],
+    "ffd_scale2": [2.82755, 1.27579, 2.88782],
+    "ffd_offset": [0, -0.469999, 0],
+    "ffd_param1": -1.33509,
+    "show_ffd": 0,
+    "ffd_shader": 1,
+    "fresnel_curve": [0, 0.952941, 0.0980392, 0.00784314, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  "hdr": {
+    "enabled": 1,
+    "exposure": 1.05,
+    "white_level": 0.899181,
+    "glare_level": 1.10245,
+    "glare_thresh": 0.738857,
+    "gaussian_rad": [1.23888, 1.43176, 1.55787],
+    "glare_sum_pow": 0.557478,
+    "tex_size": 8,
+    "tex_max_mip": 8,
+    "glare": 1,
+    "glare_only": 0,
+    "tonebefore": 1,
+    "blur": 0,
+    "gamma": 2.2,
+    "dither": 0
+  },
+  "particles": {
+    "emit_vel_min": 0.15064,
+    "emit_vel_mul": 0.19,
+    "emit_vel_var": 0.282567,
+    "emit_cone_angle": 51.8695,
+    "emit_neg_prob": 0.173899,
+    "emit_vel_zscale": 0,
+    "emit_per_frame": 16.6539,
+    "emit_prob": 0.479115,
+    "aging_speed": 0.00285223,
+    "aging_variance": 0.493003,
+    "friction": 0.030551,
+    "spin_time_scale": 2.74,
+    "delta_time": 0.0088883,
+    "gravity": -6.8e-05,
+    "wind_dir": [0.340188, 0, 0.35],
+    "wind_scale": 0,
+    "wind_scale_10": 0,
+    "brownian_scale": 0.225311,
+    "spot_pos": [4.16, 2.63, -7.6],
+    "spot_attn": [1, 0, 0],
+    "specular_power": 35.2904,
+    "specular_coeff": 74.74,
+    "lambert_coeff": 8,
+    "exposure": 0.0390458,
+    "fresnel": 1.33319,
+    "color_control": 1,
+    "iridescent_exp": 1,
+    "global_alpha": 1,
+    "size_middle": 0.0536233,
+    "size_near": 0.0772033,
+    "size_far": 0.874062,
+    "near_focus": 6.12435,
+    "near_focus_dist": 1.3193,
+    "near_focus_pow": 2.47206,
+    "near_darkness": 6.24028,
+    "near_fuzziness": 3.79,
+    "far_focus": 12.8327,
+    "far_focus_dist": 3.54129,
+    "far_focus_pow": 1.83324,
+    "far_darkness": 13.9,
+    "near_align": 0.722,
+    "size_align": 13.19,
+    "glare": 0.159705,
+    "glare_scale": 5.44386,
+    "glare_p1": 0.99,
+    "glare_p2": 4.44,
+    "iridescent_gradient": ["#fbfb8f", "#bbc57a", "#bcb761", "#b2953d", "#b17f52", "#e994ba", "#c779ea", "#908df5"]
+  },
+  "overrides": {
+    "black": {
+      "background": {
+        "color1": [0, 0, 0],
+        "color2": [0, 0, 0],
+        "color3": [0, 0, 0],
+        "color4": [0, 0, 0],
+        "fovy": 72.0004
+      },
+      "line1": {
+        "damping": 0.0003,
+        "spacing": 402.611,
+        "brightness": 0.506754,
+        "mipmap_bias": 2.72688,
+        "fresnel": 1.05552,
+        "falloff": 2.27705,
+        "perturbation": 0.1,
+        "ffd_scale1": [5.67726, 1.01926, 1],
+        "ffd_scale2": [2.82755, 1.94378, 1.99926],
+        "ffd_param1": -0.908607
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 0.999878,
+        "glare_level": 1.33,
+        "glare_thresh": 0.699812,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      },
+      "particles": {
+        "global_alpha": 0,
+        "size_middle": 0.0464771,
+        "far_focus": 12.0064,
+        "glare": 0.201367
+      }
+    },
+    "bright": {
+      "background": {
+        "color3": [0.848912, 0.848399, 0.848555],
+        "color4": [0.924998, 0.924021, 0.924029],
+        "fovy": 71.8487
+      },
+      "line1": {
+        "spacing": 407.669,
+        "brightness": 1.12128,
+        "mipmap_bias": 1.86511,
+        "fresnel": 0.463044,
+        "falloff": 0.294391,
+        "perturbation": 0.1,
+        "ffd_scale2": [2.82755, 1.27473, 2.88939],
+        "ffd_param1": -1.34117
+      },
+      "hdr": {
+        "exposure": 1.35614,
+        "white_level": 0.946851,
+        "glare_level": 1.43379,
+        "glare_thresh": 0.646942,
+        "gaussian_rad": [1.23638, 1.43047, 1.55683],
+        "glare_sum_pow": 0.556445
+      }
+    },
+    "coldboot1": {
+      "background": {
+        "color1": [0.0021302, 0.00213025, 0.00213032],
+        "color2": [0.00213051, 0.00213051, 0.00213082],
+        "color3": [0, 0, 0],
+        "color4": [0, 0, 0],
+        "fovy": 71.796,
+        "night_blend": 1,
+        "night2day_begin": 4,
+        "night2day_end": 6,
+        "day2night_end": 24,
+        "dayspread": 2.73593,
+        "night_white_bias": 0.513834
+      },
+      "line1": {
+        "spacing": 357.46,
+        "brightness": 0.512099,
+        "mipmap_bias": 1.90518,
+        "fresnel": 2,
+        "falloff": 0.900768,
+        "timestep": 2,
+        "perturbation": 0,
+        "pos": [-7.67933, -1.08844, -7],
+        "ffd_scale2": [2.82755, 0.999999, 2.85341],
+        "ffd_param1": -2
+      },
+      "hdr": {
+        "exposure": 1.64,
+        "white_level": 1,
+        "glare_level": 1.74,
+        "glare_thresh": 0.2
+      },
+      "particles": {
+        "emit_vel_mul": 3.7496,
+        "global_alpha": 0,
+        "size_middle": 0.0464771,
+        "far_focus": 12.0064,
+        "glare": 0.201367
+      }
+    },
+    "coldboot2": {
+      "background": {
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 2.68038,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "timestep": 2,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ffd_scale2": [3.2, 1.27579, 2.88782]
+      },
+      "particles": {
+        "emit_vel_mul": 3.7496,
+        "global_alpha": 0,
+        "size_middle": 0.0464771,
+        "far_focus": 12.0064,
+        "glare": 0.201367
+      }
+    },
+    "day": {
+      "background": {
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 2.68038,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "timestep": 2,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ffd_scale2": [3.2, 1.27579, 2.88782]
+      },
+      "particles": {
+        "size_middle": 0.0464771,
+        "far_focus": 12.2008,
+        "far_focus_dist": 4.02735,
+        "glare": 0.201367
+      }
+    },
+    "gameboot1": {
+      "background": {
+        "color1": [0.00205052, 0.00221067, 0.00232856],
+        "color2": [0.00287942, 0.00302322, 0.00302797],
+        "color3": [0.970555, 0.935616, 0.940776],
+        "color4": [1.01244, 0.951617, 0.968333],
+        "fovy": 71.9314
+      },
+      "line1": {
+        "spacing": 407.941,
+        "brightness": 1.09386,
+        "mipmap_bias": 1.81907,
+        "fresnel": 0.479816,
+        "falloff": 0.190247,
+        "perturbation": 0.0967888,
+        "pos": [-7.67933, -1.08844, -6.4],
+        "ffd_scale2": [2.82755, 1.20511, 2.96023],
+        "ffd_param1": -1.73301
+      },
+      "hdr": {
+        "exposure": 1.39206,
+        "white_level": 0.972739,
+        "glare_level": 1.38405,
+        "glare_thresh": 0.669912,
+        "gaussian_rad": [1.17774, 1.40017, 1.53239],
+        "glare_sum_pow": 0.532176
+      }
+    },
+    "gameboot2": {
+      "background": {
+        "color1": [0.8, 0.8, 0.8],
+        "color2": [0.8, 0.8, 0.8],
+        "color3": [0, 0, 0],
+        "color4": [0, 0, 0],
+        "fovy": 71.9996,
+        "neutrinos_x": 33.6672
+      },
+      "line1": {
+        "timestep": 2,
+        "pos": [-7.67933, -1.08844, -4.40287]
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 0.999878,
+        "glare_level": 1.33,
+        "glare_thresh": 0.699812,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      }
+    },
+    "gameboot3": {
+      "background": {
+        "color1": [0, 0, 0],
+        "color2": [0, 0, 0],
+        "color3": [0, 0, 0],
+        "color4": [0, 0, 0],
+        "fovy": 72,
+        "night2day_begin": 4,
+        "night2day_end": 6,
+        "day2night_begin": 18,
+        "day2night_end": 20,
+        "dayspread": 1,
+        "night_white_bias": 0.513834
+      },
+      "line1": {
+        "brightness": 0,
+        "fresnel": 0,
+        "timestep": 2,
+        "pos": [-7.67933, -1.08844, -2.40287]
+      },
+      "hdr": {
+        "exposure": 1,
+        "white_level": 1,
+        "glare_level": 1,
+        "glare_thresh": 1,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      },
+      "particles": {
+        "emit_vel_min": 0.029756,
+        "emit_vel_mul": 1.52761,
+        "aging_speed": 0.0034476,
+        "aging_variance": 0,
+        "delta_time": 0.08,
+        "wind_dir": [-5.34058e-05, 0, 0.35],
+        "wind_scale": 0.000152351,
+        "brownian_scale": 0.0556335,
+        "size_middle": 0.073865,
+        "size_near": 0.186308,
+        "size_far": 0.0389094,
+        "near_focus": 7,
+        "near_focus_dist": 2.4303,
+        "near_focus_pow": 3.05,
+        "near_darkness": 6.63954,
+        "far_focus": 9.81914,
+        "far_focus_dist": 0.138874,
+        "far_focus_pow": 1.72,
+        "glare": 0.423566
+      }
+    },
+    "gameboot4": {
+      "background": {
+        "color1": [0, 0, 0],
+        "color2": [0, 0, 0],
+        "color3": [0, 0, 0],
+        "color4": [0, 0, 0],
+        "fovy": 72,
+        "night2day_begin": 4,
+        "night2day_end": 6,
+        "day2night_begin": 18,
+        "day2night_end": 20,
+        "dayspread": 1,
+        "night_white_bias": 0.513834
+      },
+      "line1": {
+        "spacing": 408.299,
+        "brightness": 1.06,
+        "mipmap_bias": 1.75802,
+        "fresnel": 0.501002,
+        "falloff": 0.048,
+        "perturbation": 0.1,
+        "ffd_scale2": [2.82755, 1.2, 3],
+        "ffd_param1": -1.83395
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 0.999878,
+        "glare_level": 1.33,
+        "glare_thresh": 0.699812,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      },
+      "particles": {
+        "emit_vel_min": 0.029756,
+        "emit_vel_mul": 1.52761,
+        "aging_speed": 0.0034476,
+        "aging_variance": 0,
+        "delta_time": 0.08,
+        "wind_dir": [-5.34058e-05, 0, 0.35],
+        "wind_scale": 0.000152351,
+        "brownian_scale": 0.0556335,
+        "global_alpha": 0,
+        "size_middle": 0.073865,
+        "size_near": 0.186308,
+        "size_far": 0.0389094,
+        "near_focus": 7,
+        "near_focus_dist": 2.4303,
+        "near_focus_pow": 3.05,
+        "near_darkness": 6.63954,
+        "far_focus": 9.81914,
+        "far_focus_dist": 0.138874,
+        "far_focus_pow": 1.72,
+        "glare": 0.423566
+      }
+    },
+    "gameboot5": {
+      "background": {
+        "color1": [0, 0, 0],
+        "color2": [0, 0, 0],
+        "color3": [1, 0.99953, 0.99953],
+        "color4": [1, 0.99953, 0.99953],
+        "fovy": 72
+      },
+      "line1": {
+        "spacing": 408.299,
+        "brightness": 1.06,
+        "mipmap_bias": 1.75802,
+        "fresnel": 0.501002,
+        "falloff": 0.048,
+        "perturbation": 0.1,
+        "ffd_scale2": [2.82755, 1.2, 3],
+        "ffd_param1": -1.83395
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 0.999878,
+        "glare_level": 1.33,
+        "glare_thresh": 0.699812,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      }
+    },
+    "higure": {
+      "background": {
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 2.68038,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "spacing": 408.298,
+        "brightness": 1.06,
+        "mipmap_bias": 1.75802,
+        "fresnel": 0.501002,
+        "falloff": 0.048,
+        "timestep": 2,
+        "perturbation": 0.1,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ffd_scale2": [3.2, 1.2, 3],
+        "ffd_param1": -1.83395
+      },
+      "hdr": {
+        "exposure": 1.2,
+        "white_level": 0.999878,
+        "glare_level": 1.1,
+        "glare_thresh": 0.8,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      },
+      "particles": {
+        "size_middle": 0.0464771,
+        "far_focus": 12.6869,
+        "far_focus_dist": 4.02735,
+        "glare": 0.18748
+      }
+    },
+    "initial_setting": {
+      "background": {
+        "color1": [0, 0, 0],
+        "color2": [0, 0, 0],
+        "color3": [1, 0.99953, 0.99953],
+        "color4": [1, 0.99953, 0.99953],
+        "fovy": 72.0001
+      },
+      "line1": {
+        "spacing": 408.3,
+        "brightness": 0,
+        "mipmap_bias": 1.75802,
+        "fresnel": 1,
+        "falloff": 1,
+        "perturbation": 0.1,
+        "ffd_scale2": [2.82755, 1.2, 3],
+        "ffd_param1": -1.83395
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 0.999878,
+        "glare_level": 1.33,
+        "glare_thresh": 0.699812,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      }
+    },
+    "music_1": {
+      "background": {
+        "color1": [0.579004, 0.435001, 0.472],
+        "color2": [0, 0, 0],
+        "color3": [1.2, 1, 1.1],
+        "color4": [0.5, 0, 0.5],
+        "fovy": 83.2002,
+        "colour_shader": 1
+      },
+      "line1": {
+        "timestep": 3.72102,
+        "pos": [-7.5, 0, -5.2],
+        "ang": [-0.994157, 0.796751, 0.190364],
+        "ang_rot": 13.1208,
+        "ffd_scale1": [5.13725, 1.00077, 1],
+        "ffd_scale2": [3.2, 0.99579, 3.41782]
+      },
+      "hdr": {
+        "exposure": 1.51,
+        "white_level": 0.999878,
+        "glare_level": 2.46,
+        "glare_thresh": 0.260814,
+        "gaussian_rad": [2, 2.2, 2.5],
+        "glare_sum_pow": 0.738001,
+        "gamma": 1,
+        "dither": 0.00392157
+      },
+      "particles": {
+        "size_middle": 0.0464771,
+        "far_focus": 12.0064,
+        "glare": 0.201367
+      }
+    },
+    "night": {
+      "background": {
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 2.68038,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "spacing": 408.298,
+        "brightness": 0.9,
+        "mipmap_bias": 1.75802,
+        "fresnel": 0.52,
+        "falloff": 0.048,
+        "timestep": 2,
+        "perturbation": 0.1,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ang_rot": 10,
+        "ffd_scale2": [3.2, 1.2, 3],
+        "ffd_param1": -1.83395
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 0.999878,
+        "glare_level": 1.33,
+        "glare_thresh": 0.699812,
+        "gaussian_rad": [1.1, 1.36, 1.5],
+        "glare_sum_pow": 0.5
+      },
+      "particles": {
+        "far_focus_dist": 4.09678
+      }
+    },
+    "welcome_1": {
+      "background": {
+        "color1": [0.343163, 1.15655, 10],
+        "color2": [0.440692, 1.81381, 10],
+        "color3": [0.557667, 0.624199, 0.859806],
+        "color4": [0.774938, 1.81381, 0.696515],
+        "fovy": 158.733,
+        "colour_shader": 1,
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 3,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "timestep": 2,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ffd_scale2": [3.2, 1.27579, 2.88782]
+      },
+      "hdr": {
+        "exposure": 3.40362,
+        "white_level": 1000,
+        "glare_level": 100,
+        "glare_thresh": 100,
+        "gaussian_rad": [2.9, 2.9, 2.9],
+        "glare_sum_pow": 100,
+        "tex_size": 7,
+        "tex_max_mip": 7,
+        "tonebefore": 0,
+        "blur": 1,
+        "dither": 0.00392157
+      },
+      "particles": {
+        "emit_vel_min": 0.131537,
+        "emit_vel_mul": 4.16622,
+        "emit_vel_zscale": 0.208311,
+        "emit_per_frame": 70.5765,
+        "emit_prob": 0.493003,
+        "aging_speed": 0.00101112,
+        "aging_variance": 0.5,
+        "friction": 0.0619405,
+        "spin_time_scale": 2.99327,
+        "delta_time": 0.0172207,
+        "wind_dir": [0.361019, -0.0347719, 0.35],
+        "wind_scale": 0.000544572,
+        "brownian_scale": 0.0794061,
+        "specular_power": 29.3486,
+        "size_middle": 0.073865,
+        "size_near": 0.0143576,
+        "size_far": 0.00746469,
+        "near_focus_dist": 1.59705,
+        "near_focus_pow": 2.22209,
+        "near_darkness": 5.49606,
+        "far_focus": 7,
+        "far_focus_dist": 6.31877,
+        "far_focus_pow": 1.63882,
+        "far_darkness": 4.46526,
+        "near_align": 0.118043,
+        "size_align": 14.1652,
+        "glare": 0.222198,
+        "glare_scale": 6.22156,
+        "glare_p1": 1.6344,
+        "glare_p2": 8.41834
+      }
+    },
+    "welcome_2": {
+      "background": {
+        "color1": [0.123246, 6.23728, 8.92659],
+        "color2": [0.262794, 10, 6.6364],
+        "color3": [0.0594205, 3.92418, 10],
+        "color4": [0.22837, 2.14287, 10],
+        "fovy": 81.2413,
+        "colour_shader": 1,
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 3,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "timestep": 2,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ffd_scale2": [3.2, 1.27579, 2.88782]
+      },
+      "hdr": {
+        "exposure": 3.40362,
+        "white_level": 1000,
+        "glare_level": 100,
+        "glare_thresh": 100,
+        "gaussian_rad": [2.9, 2.9, 2.9],
+        "glare_sum_pow": 100,
+        "tex_size": 7,
+        "tex_max_mip": 7,
+        "tonebefore": 0,
+        "blur": 1,
+        "dither": 0.00392157
+      },
+      "particles": {
+        "emit_vel_min": 0.131537,
+        "emit_vel_mul": 4.16622,
+        "emit_vel_zscale": 0.208311,
+        "emit_per_frame": 70.5765,
+        "emit_prob": 0.493003,
+        "aging_speed": 0.00101112,
+        "aging_variance": 0.5,
+        "friction": 0.0619405,
+        "spin_time_scale": 2.99327,
+        "delta_time": 0.0172207,
+        "wind_dir": [0.361019, -0.0347719, 0.35],
+        "wind_scale": 0.000544572,
+        "brownian_scale": 0.0794061,
+        "specular_power": 29.3486,
+        "size_middle": 0.073865,
+        "size_near": 0.0143576,
+        "size_far": 0.00746469,
+        "near_focus_dist": 1.59705,
+        "near_focus_pow": 2.22209,
+        "near_darkness": 5.49606,
+        "far_focus": 7,
+        "far_focus_dist": 6.31877,
+        "far_focus_pow": 1.63882,
+        "far_darkness": 4.46526,
+        "near_align": 0.118043,
+        "size_align": 14.1652,
+        "glare": 0.222198,
+        "glare_scale": 6.22156,
+        "glare_p1": 1.6344,
+        "glare_p2": 8.41834
+      }
+    },
+    "yoake": {
+      "background": {
+        "night_blend": 0.499947,
+        "night2day_end": 5.16611,
+        "day2night_end": 20.3312,
+        "dayspread": 2.68038,
+        "night_white_bias": 0.486059
+      },
+      "line1": {
+        "spacing": 407.671,
+        "brightness": 1.12108,
+        "mipmap_bias": 1.86511,
+        "fresnel": 0.463044,
+        "falloff": 0.294154,
+        "timestep": 2,
+        "perturbation": 0.1,
+        "pos": [-8.2, -1.08844, -6.40287],
+        "ffd_scale2": [3.2, 1.27473, 2.88939],
+        "ffd_param1": -1.34164
+      },
+      "hdr": {
+        "exposure": 1.1,
+        "white_level": 0.999878,
+        "glare_level": 1.5,
+        "glare_thresh": 0.8,
+        "gaussian_rad": [1.23638, 1.43047, 1.55683],
+        "glare_sum_pow": 0.5
+      },
+      "particles": {
+        "far_focus": 12.0064,
+        "far_focus_dist": 4.02735,
+        "glare": 0.180536
+      }
+    }
+  }
+}

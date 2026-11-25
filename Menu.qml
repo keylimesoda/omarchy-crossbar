@@ -103,12 +103,13 @@ Item {
           root.discoveredQrcPresets = info.qrcs || []
           if (!root.nativeBackendQrc && root.discoveredQrcPresets.length > 0) {
             var preferred = null
-            for (var i = 0; i < root.discoveredQrcPresets.length; i++) {
-              if (root.discoveredQrcPresets[i].id === "classic-silk") { preferred = root.discoveredQrcPresets[i].path; break }
-            }
-            if (!preferred) {
-              for (var j = 0; j < root.discoveredQrcPresets.length; j++) {
-                if (root.discoveredQrcPresets[j].id === "stock_ofw_lines") { preferred = root.discoveredQrcPresets[j].path; break }
+            var prefOrder = ["lines", "classic-silk", "stock_ofw_lines"]
+            for (var p = 0; p < prefOrder.length && !preferred; p++) {
+              for (var i = 0; i < root.discoveredQrcPresets.length; i++) {
+                if (root.discoveredQrcPresets[i].id === prefOrder[p]) {
+                  preferred = root.discoveredQrcPresets[i].path
+                  break
+                }
               }
             }
             root.nativeBackendQrc = preferred || root.discoveredQrcPresets[0].path
