@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.keylimesoda.crossbar",
   "name": "Crossbar",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "Ric",
   "license": "MIT",
   "description": "A PS3-authentic XrossMediaBar (XMB) interface for the Omarchy menu with optional modern-moyou Vulkan ribbon and particle wind integration",

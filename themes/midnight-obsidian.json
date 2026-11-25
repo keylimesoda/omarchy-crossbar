@@ -1,0 +1,40 @@
+{
+  "schema": "modern-moyou-theme/v1",
+  "name": "Midnight Obsidian",
+  "sky": {
+    "day": ["#020305", "#07090f"],
+    "night": ["#000000", "#020306"]
+  },
+  "background": {
+    "color1": [1.0, 1.0, 1.0],
+    "color2": [1.0, 1.0, 1.0],
+    "color3": [0.88, 0.90, 0.96],
+    "color4": [0.95, 0.96, 1.0],
+    "fovy": 71.846,
+    "night_blend": 0.5
+  },
+  "line1": {
+    "brightness": 0.78,
+    "fresnel": 0.62,
+    "spacing": 407.658,
+    "thinness": 1.0,
+    "ang_rot": 16.0,
+    "ffd_param1": -1.45,
+    "ffd_shader": 1
+  },
+  "hdr": {
+    "enabled": 1,
+    "exposure": 1.15,
+    "white_level": 0.92,
+    "glare_level": 1.18,
+    "glare_thresh": 0.72,
+    "glare": 1,
+    "tonebefore": 1
+  },
+  "particles": {
+    "emit_per_frame": 14.0,
+    "emit_prob": 0.45,
+    "global_alpha": 1.0,
+    "glare": 0.16
+  }
+}

@@ -36,15 +36,16 @@ Item {
   property bool xmbPreviewActive: false
   readonly property bool effectiveNativeBackend: root.useNativeBackend
     && root.nativeBackendBin.length > 0
-    && root.nativeBackendQrc.length > 0
   property real waveTargetX: 0
 
-  // One-shot startup probe to locate modern-moyou binary, asset directory, and available .qrc themes.
+  // One-shot startup probe to locate modern-moyou binary, optional asset directory, and
+  // available .json (modern-moyou-theme/v1) / .qrc themes across plugin, user, and system dirs.
   Process {
     id: nativeEnvProbe
     running: true
     command: ["python3", "-c",
-      "import glob,json,os,shutil\n" +
+      "import glob,json,os,shutil,sys\n" +
+      "plugin_themes=sys.argv[1]\n" +
       "home=os.path.expanduser('~')\n" +
       "env_dir=os.environ.get('MODERN_MOYOU_DIR') or os.environ.get('MODERN_XMB_DIR','')\n" +
       "bin_cands=[os.environ.get('MODERN_MOYOU_BIN',''),os.environ.get('MODERN_XMB_BIN','')," +
@@ -62,13 +63,35 @@ Item {
       "os.path.join(home,'modern-moyou/assets')," +
       "os.path.join(home,'Modern-XMB/assets')]\n" +
       "assets_dir=next((d for d in asset_cands if d and os.path.isdir(d)),'')\n" +
-      "qrcs=[]\n" +
-      "if assets_dir:\n" +
-      "  for p in sorted(glob.glob(os.path.join(assets_dir,'qrc','*.qrc'))):\n" +
-      "    stem=os.path.splitext(os.path.basename(p))[0]\n" +
-      "    label=stem.replace('_',' ').title()\n" +
-      "    qrcs.append({'id':stem,'label':label,'path':p})\n" +
-      "print(json.dumps({'bin':bin_path,'assets':assets_dir,'qrcs':qrcs}))\n"
+      "patterns=[\n" +
+      "  os.path.join(plugin_themes,'*.json'),\n" +
+      "  os.path.join(home,'.local/share/modern-moyou/**/*.json'),\n" +
+      "  os.path.join(home,'.local/share/modern-moyou/**/*.qrc'),\n" +
+      "  '/usr/share/modern-moyou/themes/*.json',\n" +
+      "  os.path.join(home,'modern-moyou/themes/*.json'),\n" +
+      "  os.path.join(home,'Modern-XMB/themes/*.json'),\n" +
+      "  os.path.join(assets_dir,'qrc','*.qrc') if assets_dir else '',\n" +
+      "]\n" +
+      "seen=set(); themes=[]\n" +
+      "for pat in patterns:\n" +
+      "  if not pat: continue\n" +
+      "  for p in sorted(glob.glob(pat,recursive=True)):\n" +
+      "    rp=os.path.realpath(p)\n" +
+      "    base=os.path.basename(p)\n" +
+      "    if rp in seen or base in seen: continue\n" +
+      "    seen.add(rp); seen.add(base)\n" +
+      "    stem=os.path.splitext(base)[0]\n" +
+      "    label=stem.replace('_',' ').replace('-',' ').title()\n" +
+      "    if p.endswith('.json'):\n" +
+      "      try:\n" +
+      "        d=json.load(open(p))\n" +
+      "        if d.get('schema')!='modern-moyou-theme/v1': continue\n" +
+      "        if isinstance(d.get('name'),str) and d['name'].strip(): label=d['name'].strip()\n" +
+      "      except Exception: continue\n" +
+      "    themes.append({'id':stem,'label':label,'path':p})\n" +
+      "themes.append({'id':'builtin','label':'Built-in (Procedural)','path':'builtin'})\n" +
+      "print(json.dumps({'bin':bin_path,'assets':assets_dir,'qrcs':themes}))\n",
+      Qt.resolvedUrl("themes").toString().replace(/^file:\/\//, "")
     ]
     stdout: SplitParser {
       onRead: function(line) {
@@ -78,11 +101,16 @@ Item {
           root.modernXmbAssetsDir = info.assets || ""
           root.discoveredQrcPresets = info.qrcs || []
           if (!root.nativeBackendQrc && root.discoveredQrcPresets.length > 0) {
-            var stock = null
+            var preferred = null
             for (var i = 0; i < root.discoveredQrcPresets.length; i++) {
-              if (root.discoveredQrcPresets[i].id === "stock_ofw_lines") { stock = root.discoveredQrcPresets[i].path; break }
+              if (root.discoveredQrcPresets[i].id === "classic-silk") { preferred = root.discoveredQrcPresets[i].path; break }
             }
-            root.nativeBackendQrc = stock || root.discoveredQrcPresets[0].path
+            if (!preferred) {
+              for (var j = 0; j < root.discoveredQrcPresets.length; j++) {
+                if (root.discoveredQrcPresets[j].id === "stock_ofw_lines") { preferred = root.discoveredQrcPresets[j].path; break }
+              }
+            }
+            root.nativeBackendQrc = preferred || root.discoveredQrcPresets[0].path
           }
           if (root.rowsLoaded) root.rebuildItemsFromSources()
         } catch (e) {}
@@ -99,7 +127,7 @@ Item {
       "--month", String(root.xmbMonth),
       "--time", String(root.xmbTime),
       "--opacity", String(root.nativeBackendOpacity),
-      root.nativeBackendQrc
+      root.nativeBackendQrc || "builtin"
     ]
   }
 
@@ -179,7 +207,7 @@ Item {
     if (parts.length < 3) return
     var key = parts[1]
     var val = parts.slice(2).join(":")
-    if (key === "qrc") { root.sendNavWind("qrc " + val); root.xmbPreviewActive = true }
+    if (key === "qrc") { root.sendNavWind("theme " + val); root.xmbPreviewActive = true }
     else if (key === "month") { root.sendNavWind("month " + val); root.xmbPreviewActive = true }
     else if (key === "time") { root.sendNavWind("time " + val); root.xmbPreviewActive = true }
     else if (key === "opacity") { root.sendNavWind("opacity " + val); root.xmbPreviewActive = true }
@@ -188,7 +216,7 @@ Item {
   function restoreXmbLiveState() {
     if (!root.xmbPreviewActive) return
     root.xmbPreviewActive = false
-    root.sendNavWind("qrc " + root.nativeBackendQrc)
+    root.sendNavWind("theme " + (root.nativeBackendQrc || "builtin"))
     root.sendNavWind("month " + root.xmbMonth)
     root.sendNavWind("time " + root.xmbTime)
     root.sendNavWind("opacity " + String(root.nativeBackendOpacity))
@@ -202,7 +230,7 @@ Item {
     root.xmbPreviewActive = false
     if (key === "qrc") {
       root.nativeBackendQrc = val
-      root.sendNavWind("qrc " + val)
+      root.sendNavWind("theme " + val)
     } else if (key === "month") {
       root.xmbMonth = val
       root.sendNavWind("month " + val)

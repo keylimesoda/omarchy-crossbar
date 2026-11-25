@@ -1,0 +1,47 @@
+{
+  "schema": "modern-moyou-theme/v1",
+  "name": "Deep Cobalt",
+  "sky": {
+    "day": ["#0b2358", "#1f5ca8"],
+    "night": ["#040c24", "#0c224f"]
+  },
+  "background": {
+    "color1": [1.0, 1.0, 1.0],
+    "color2": [1.0, 1.0, 1.0],
+    "color3": [0.76, 0.88, 1.0],
+    "color4": [0.88, 0.95, 1.0],
+    "fovy": 71.846,
+    "night_blend": 0.45
+  },
+  "line1": {
+    "brightness": 0.74,
+    "fresnel": 0.60,
+    "spacing": 407.658,
+    "thinness": 1.0,
+    "ang_rot": 18.0,
+    "ffd_param1": -1.38,
+    "ffd_shader": 1
+  },
+  "hdr": {
+    "enabled": 1,
+    "exposure": 1.08,
+    "white_level": 0.90,
+    "glare_level": 1.15,
+    "glare_thresh": 0.73,
+    "glare": 1,
+    "tonebefore": 1
+  },
+  "particles": {
+    "emit_per_frame": 16.0,
+    "emit_prob": 0.48,
+    "global_alpha": 1.0,
+    "glare": 0.16,
+    "iridescent_tint": "#88c8ff"
+  },
+  "overrides": {
+    "night": {
+      "line1": { "brightness": 0.92, "fresnel": 0.50, "ang_rot": 11.0 },
+      "hdr": { "exposure": 1.35, "glare_level": 1.30 }
+    }
+  }
+}

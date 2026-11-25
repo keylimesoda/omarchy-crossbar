@@ -29,11 +29,10 @@ A PS3-authentic XrossMediaBar (XMB) interface for Omarchy's main menu (`SUPER + 
 
 ## Optional: Native Vulkan `modern-moyou` Backend
 
-Crossbar works out of the box with its built-in QML shader ribbon. For the full native Vulkan silk ribbon, monthly sky LUTs, auto time-of-day lighting, and 32×16 navigation particle wind:
+Crossbar works out of the box with its built-in QML shader ribbon, and ships 3 MIT-licensed `modern-moyou-theme/v1` JSON presets (`themes/classic-silk.json`, `themes/midnight-obsidian.json`, `themes/deep-cobalt.json`) so the native Vulkan backend works immediately with zero proprietary files:
 
 1. Install [modern-moyou](https://github.com/keylimesoda/modern-moyou) on your `$PATH` (or build into `~/modern-moyou/build/modern-moyou`, or set `MODERN_MOYOU_BIN`).
-2. Place `.qrc` themes (and optional user-supplied `fonts/` and `ui/tex_indi_bg.png`) in `~/.local/share/modern-moyou/` (or `/usr/share/modern-moyou/`, `~/modern-moyou/assets/`, or `MODERN_MOYOU_ASSETS`).
-3. Reopen the menu—Crossbar detects `modern-moyou` automatically on startup and exposes discovered `.qrc` themes under **Appearance → XMB Menu → Theme / Wave**.
+2. Reopen the menu—Crossbar detects `modern-moyou` automatically, launches with the bundled `Classic Silk (Seasonal)` JSON theme (or `builtin` procedural fallback), and exposes all bundled `.json` presets plus any custom `.json` or user-supplied `.qrc` themes placed in `~/.local/share/modern-moyou/` or `/usr/share/modern-moyou/themes/` under **Appearance → XMB Menu → Theme / Wave**.
 
 ## Requirements
 

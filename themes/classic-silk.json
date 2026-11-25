@@ -1,0 +1,66 @@
+{
+  "schema": "modern-moyou-theme/v1",
+  "name": "Classic Silk (Seasonal)",
+  "background": {
+    "color1": [1.0, 1.0, 1.0],
+    "color2": [1.0, 1.0, 1.0],
+    "color3": [0.85, 0.85, 0.85],
+    "color4": [0.92, 0.92, 0.92],
+    "fovy": 71.846,
+    "colour_shader": 0,
+    "night_blend": 0.5,
+    "night2day_begin": 0.0,
+    "night2day_end": 5.166,
+    "day2night_begin": 18.498,
+    "day2night_end": 20.331,
+    "dayspread": 2.68,
+    "night_white_bias": 0.486
+  },
+  "line1": {
+    "brightness": 0.702,
+    "fresnel": 0.639,
+    "spacing": 407.658,
+    "thinness": 1.0,
+    "mipmap_bias": 1.867,
+    "falloff": 1.003,
+    "timestep": 4.0,
+    "ang_rot": 18.121,
+    "ffd_param1": -1.335,
+    "ffd_shader": 1
+  },
+  "hdr": {
+    "enabled": 1,
+    "exposure": 1.05,
+    "white_level": 0.90,
+    "glare_level": 1.10,
+    "glare_thresh": 0.74,
+    "gaussian_rad": [1.24, 1.43, 1.56],
+    "glare_sum_pow": 0.56,
+    "glare": 1,
+    "tonebefore": 1
+  },
+  "particles": {
+    "emit_per_frame": 16.65,
+    "emit_prob": 0.48,
+    "global_alpha": 1.0,
+    "glare": 0.16,
+    "glare_scale": 5.44
+  },
+  "overrides": {
+    "night": {
+      "line1": {
+        "brightness": 0.90,
+        "fresnel": 0.52,
+        "falloff": 0.048,
+        "ang_rot": 10.0,
+        "ffd_param1": -1.834
+      },
+      "hdr": {
+        "exposure": 1.41,
+        "white_level": 1.0,
+        "glare_level": 1.33,
+        "glare_thresh": 0.70
+      }
+    }
+  }
+}
